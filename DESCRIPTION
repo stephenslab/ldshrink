@@ -1,0 +1,13 @@
+Package: LDshrink
+Type: Package
+Title: Implementation of Wen and Stephens 2010 LD shrinkage estimator
+Version: 1.0
+Date: 2017-05-31
+Author: Nicholas Knoblauch
+Maintainer: Nicholas Knoblauch <nwknoblauch@gmail.com>
+Description: Compute LD using the Wen and Stephens shrinkage estimator. Companion package to rssr.
+License: GPL (>= 3)
+Imports: Rcpp (>= 0.12.10), RcppEigen (>= 0.3.2.9.1)
+LinkingTo: Rcpp, RcppEigen
+Suggests: testthat, knitr,rmarkdown
+VignetteBuilder: knitr
