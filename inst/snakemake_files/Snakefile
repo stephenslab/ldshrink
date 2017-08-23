@@ -1,0 +1,31 @@
+from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
+FTP = FTPRemoteProvider()
+
+
+rule all:
+    input:
+        "vcfs/ALL.chr19.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+        
+
+
+rule dl_vcf:
+    input:
+        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
+    output:
+        "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+
+    run:
+        shell("mv {input} {output}")
+
+rule dl_vcf_tbi:
+    input:
+        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi",keep_local=True)
+    output:
+        "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+
+
+    run:
+        shell("mv {input} {output}")
+
+        
+

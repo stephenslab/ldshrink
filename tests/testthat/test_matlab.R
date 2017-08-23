@@ -24,12 +24,12 @@ test_that("LD shrinkage estimators work as expected on simulated data",{
   #  cuda_cor <- cov2cor(cuda_sighat)
   #  matA <- read_2d_index_h5(ikgf,"SNPdata","genotype",1:6000)
   #  mapA <- read_dvec(ikgf,"SNPinfo","map")[1:6000]
-   # m=85
-   # Ne=1490.672741
-   # cutoff=1e-3
-   # nLD <- calcLD(matA,mapA,m,Ne,cutoff)
-   
-   
+  # m=85
+  # Ne=1490.672741
+  # cutoff=1e-3
+  # nLD <- calcLD(matA,mapA,m,Ne,cutoff)
+  
+  
   #   
   
   Hpanel <- matrix(sample(c(0,1),n*2*p,replace=T),n*2,p)
@@ -49,6 +49,42 @@ test_that("LD shrinkage estimators work as expected on simulated data",{
   # Rsig[lower.tri(Rsig)] <- 0
   expect_equal(Rsig,Rmsig)
 })
+
+test_that("LD shrinkage estimators results are approximately equal betweeen haplotype and genotype data",{
+  m <- 100
+  Ne <- 10000
+  n <- 100
+  p <- 500
+  cutoff <- 1e-3
+  tmap <- cumsum(runif(p)/10)
+  
+  # library(RcppEigenH5) 
+  #  ikgf <- "/media/nwknoblauch/Data/GTEx/GTEx_rssr/Genome_SNP/SNP_Whole_Blood_1kg_6250_t.h5"
+  #  cuda_f <- "/home/nwknoblauch/Dropbox/test_cuda/test_cov.h5"
+  #  cuda_ijk <- read_df_h5(cuda_f,"R",subcols=c("k","j","i"))
+  #  cuda_sighat <- read_2d_mat_h5(cuda_f,"R","LDshrink")
+  #  cuda_cor <- cov2cor(cuda_sighat)
+  #  matA <- read_2d_index_h5(ikgf,"SNPdata","genotype",1:6000)
+  #  mapA <- read_dvec(ikgf,"SNPinfo","map")[1:6000]
+  # m=85
+  # Ne=1490.672741
+  # cutoff=1e-3
+  # nLD <- calcLD(matA,mapA,m,Ne,cutoff)
+  
+  
+  #   
+  
+  Gpanel <- matrix(sample(c(0,2),n*2*p,replace=T),n*2,p)
+  Hpanel <- Gpanel/2
+  RHsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
+  RGsig <- calcLD(hmata = Gpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
+  
+  # Rsig[lower.tri(Rsig)] <- 0
+  expect_equal(RGsig,RHsig,tolerance=1e-3)
+})
+
+
+
 
 test_that("LD shrinkage estimators work the same real data ",{
   
@@ -141,10 +177,20 @@ test_that("LD shrinkage estimators give similar results for sparse and dense dat
   Hpanel <- haplomat
   tmap <- mapdat
   
-  
   Rsig_h_d <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
   Rsig_h_s <- as.matrix(sp_calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff))
   expect_equivalent(Rsig_h_d,Rsig_h_s)
+  
+})
+
+test_that("Distance can be computed using only 'linear algebra'",{
+  
+  data("mapdat")
+  tmap <- mapdat  
+  tmap <- t(t(tmap))
+  Rdist <- abs(outer(tmap,tmap,"-"))
+  onemat <- matrix(-1,length(tmap),length(tmap))
+  ndist <- t(tmap)%*%onemat%*%tmap
   
   
   

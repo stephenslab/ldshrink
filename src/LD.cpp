@@ -1,14 +1,8 @@
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
-
+//#include <unsupported/Eigen/CXX11/Tensor>
 // [[Rcpp::depends(RcppEigen)]]
-
-
-
-
-
-
 
 //[[Rcpp::export]]
 double calc_spve_naive(const Matrix_external R,const arrayxd_external beta, const arrayxd_external beta_hat, const arrayxd_external  se_hat, const int n){
@@ -22,6 +16,55 @@ double calc_spve_naive(const Matrix_external R,const arrayxd_external beta, cons
   }
   return ret_sum;
 }
+
+// This function will transform a square matrix in to a 3d array 
+// It requires that blocksize divide rowsize/colsize perfectly
+//[[Rcpp::export]]
+Rcpp::NumericVector approx_diag(const Matrix_external R, const int blocksize) { 
+  const int p=R.rows();
+  if(p!=R.cols()){
+    Rcpp::stop("matrix R must be square");
+  }
+  
+  int chunk_num=p/blocksize;
+  if(p % blocksize!=0){
+    Rcpp::stop("blocksize must divide p perfectly");
+  }
+  Rcpp::NumericVector ret_array(chunk_num*blocksize*blocksize);
+  //  Eigen::Map<Eigen::Tensor<double,3> > block_tens(&ret_array[0],blocksize,blocksize,chunk_num);
+  for(size_t i=0;i<chunk_num;i++){
+    Eigen::MatrixXd::Map(&ret_array[i*blocksize*blocksize],blocksize,blocksize)=R.block(i*blocksize,i*blocksize,blocksize,blocksize);
+  }
+  Rcpp::IntegerVector dims(3);
+  dims[0]=blocksize;
+  dims[1]=blocksize;
+  dims[2]=chunk_num;
+  ret_array.attr("dim")=dims;
+  return(ret_array);
+};
+// 
+// Rcpp::List approx_diagl(const Matrix_external R, Rcpp::IntegerVector chunksizes){ 
+//   const int p=R.rows();
+//   if(p!=R.cols()){
+//     Rcpp::stop("matrix R must be square");
+//   }
+//   const int chunk_num=chunksizes.size();
+//   Rcpp::ListOf<Rcpp::NumericMatrix> retlist(chunk_num);
+//   int chunk_prog=0;
+//   //  Eigen::Map<Eigen::Tensor<double,3> > block_tens(&ret_array[0],blocksize,blocksize,chunk_num);
+//   for(size_t i=0;i<chunk_num;i++){
+//     size_t tchunksize=chunksizes[i];
+//     retlist[i]=
+//     retlist[i]=Rcpp::NumericMatrix(tchunksize,tchunksize);
+//     Rcpp::NumericMatrix al=retlist[i];
+//     double *tdat=&al(0,0);
+//     Eigen::MatrixXd::Map(tdat,tchunksize,tchunksize)=R.block(chunk_prog,chunk_prog,tchunksize,tchunksize);
+//     chunk_prog+=chunk_prog;
+//   }
+//   return(retlist);
+// };
+
+
 
 
 
@@ -107,10 +150,16 @@ Rcpp::DataFrame ld2df(const Matrix_external ldmat, Rcpp::StringVector rsid,const
 
 
 
-Eigen::MatrixXd calc_cov( c_Matrix_internal mat){
-  auto centered = mat.rowwise()-mat.colwise().mean();
-  return (((centered.adjoint()*centered)/double(mat.rows()-1)));  
-}
+  Eigen::MatrixXd calc_cov( c_Matrix_internal mat){
+    auto centered = mat.rowwise()-mat.colwise().mean();
+    return (((centered.adjoint()*centered)/double(mat.rows()-1)));  
+  }
+
+// 
+// Eigen::MatrixXd calc_cov( c_Matrix_internal mat){
+//   auto centered = mat.rowwise()-mat.colwise().mean();
+//   return (((centered.adjoint()*centered)/double(mat.rows()-1)));  
+// }
 
 
 
@@ -151,23 +200,24 @@ Eigen::MatrixXd cov_2_cor_exp(Matrix_external covmat){
 
 
 
-Eigen::MatrixXd calcLD(const c_Matrix_internal hmata,const c_arrayxd_internal mapa,const double m, const double Ne, const double cutoff){
+Eigen::MatrixXd calcLD(const c_Matrix_internal hmata,const c_arrayxd_internal mapa,const double m=85, const double Ne=11490.672741, const double cutoff=1e-3){
   
- 
+  
   double dosage_max=hmata.maxCoeff();
   bool isGeno=dosage_max>1;
   if(isGeno){
-    Rcpp::stop("LD cannot currently be computed from genotype, only haplotype\n");
+    Rcpp::Rcerr<<"LD is being estimated from genotype instead of haplotype"<<std::endl;
   }
   
   double theta=calc_theta(m);
   Eigen::MatrixXd S= calc_cov(hmata);
+  S*=0.5;
   int numSNP=S.rows();
   S.triangularView<Eigen::StrictlyLower>().setZero();
   std::vector<double> mapv;
   mapv.resize(mapa.size());
   Eigen::VectorXd::Map(&mapv[0],mapa.size())=mapa;
-
+  
   if(!is_sorted(mapv.begin(),mapv.end(),std::less<double>())){
     Rcpp::stop("Recombination map must be non-decreasing\n");
   }
@@ -191,7 +241,7 @@ Eigen::MatrixXd calcLD(const c_Matrix_internal hmata,const c_arrayxd_internal ma
   }
   
   // S=S+S.triangularView<Eigen::StrictlyUpper>().transpose();
-
+  
   S.triangularView<Eigen::StrictlyLower>()=S.transpose();
   Eigen::ArrayXd eye(numSNP);
   eye.setOnes();
@@ -208,7 +258,7 @@ Eigen::MatrixXd calcLD(const c_Matrix_internal hmata,const c_arrayxd_internal ma
 
 
 //[[Rcpp::export(name="calcLD")]]
-Eigen::MatrixXd calcLD_exp(Matrix_external hmata,arrayxd_external mapa,const double m, const double Ne, const double cutoff){
+Eigen::MatrixXd calcLD_exp(Matrix_external hmata,arrayxd_external mapa,const double m=85, const double Ne=11490.672741, const double cutoff=1e-3){
   return(calcLD(hmata,mapa,m,Ne,cutoff));
 }
 
