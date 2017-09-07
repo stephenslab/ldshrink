@@ -1,13 +1,15 @@
 from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 FTP = FTPRemoteProvider()
 
-KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
+#KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
+KG_dir="../../../../../../group/xhe-lab/1KG/"
+
 
 #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
 LD_break_file="fourier_ls-all.bed"
 TEMPF="temp_data.gds"
 
-
+#localrules: dl_panel_info
         # expand(KG_dir+"gds/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.gds",chr=range(1,23))
                 #KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
 rule all:
@@ -58,24 +60,24 @@ rule subset_gds:
     script:
         "gds_subset.R"        
         
-rule dl_vcf:
-    input:
-        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
-    output:
-        "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+# rule dl_vcf:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
+#     output:
+#         KG_dir+"vcf/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
 
-    run:
-        shell("mv {input} {output}")
+#     run:
+#         shell("mv {input} {output}")
 
-rule dl_vcf_tbi:
-    input:
-        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi",keep_local=True)
-    output:
-        "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+# rule dl_vcf_tbi:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi",keep_local=True)
+#     output:
+#         "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
 
 
-    run:
-        shell("mv {input} {output}")
+#     run:
+#         shell("mv {input} {output}")
 
 rule map_file_RDS:
     input:
