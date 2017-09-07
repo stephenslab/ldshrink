@@ -1,13 +1,57 @@
 from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 FTP = FTPRemoteProvider()
 
+KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
 
+#LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
+LD_break_file="fourier_ls-all.bed"
+TEMPF="temp_data.gds"
+
+
+        # expand(KG_dir+"gds/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.gds",chr=range(1,23))
+                #KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
 rule all:
     input:
-        "vcfs/ALL.chr19.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+        expand(KG_dir+"EVD_H5/1KG_{source}_{LDchunk}.h5",source="hapmap",LDchunk=range(1,1703))
+
+
         
 
 
+rule dl_panel_info:
+    input:
+        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel",
+                   keep_local=True)
+    params:
+        pop="EUR"
+    output:
+        outf="EUR.samples"
+    shell:
+        "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
+
+
+
+rule vcf_2_gds_all:
+    input: vcff=expand(KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
+    output:
+        temp_gds=temp("ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"),
+    threads: 10
+    script:
+        "vcf2seq_gds.R"        
+
+        
+rule subset_gds:
+    input:
+       temp_gds="ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds",
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_{source}.RDS",
+        breakf=LD_break_file,
+        panelf="EUR.samples"
+    output:
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"
+    threads: 10
+    script:
+        "gds_subset.R"        
+        
 rule dl_vcf:
     input:
         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
@@ -27,5 +71,42 @@ rule dl_vcf_tbi:
     run:
         shell("mv {input} {output}")
 
-        
+rule map_file_RDS:
+    input:
+        mapf=expand(KG_dir+"1000-genomes-genetic-maps/interpolated_{{source}}/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
+    output:
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_{source}.RDS"
+    script:
+        "map2RDS.R"
 
+rule ld_chunk_1kg:
+    input:
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"
+    output:
+        evdf=KG_dir+"EVD_H5/1KG_{source}_{LDchunk}.h5"
+    params:
+        region_id="{LDchunk}"
+    script:
+        "evd_1kg.R"
+
+        
+rule extract_cell_array:
+    input:
+        filename="genotype.mat"
+    output:
+        filename="genotype.h5"
+    params:
+        groupname="snp_info"
+    run:
+        import h5py
+        import numpy as np
+
+
+        with h5py.File(input.filename,'r') as f:
+            data = [ f[element[0]][:] for element in f[params.groupname]]
+
+        with h5py.File(output.filename,'w') as wf:
+            for i in range(len(data)):
+                wf.create_dataset(params.groupname+'/'+str(i),data[i].shape,data=data[i])
+                
+    
