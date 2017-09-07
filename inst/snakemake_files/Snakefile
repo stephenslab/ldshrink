@@ -12,11 +12,17 @@ TEMPF="temp_data.gds"
                 #KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
 rule all:
     input:
-        expand(KG_dir+"EVD_H5/1KG_{source}_{LDchunk}.h5",source="hapmap",LDchunk=range(1,1703))
+        dynamic(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5")
 
 
         
-
+rule t_ld_chunks:
+    input:
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+    output:
+        temp_chunkf=temp(dynamic("{LDchunk}.txt"))
+    script:
+        "list_ld_regions.R"
 
 rule dl_panel_info:
     input:
@@ -34,7 +40,7 @@ rule dl_panel_info:
 rule vcf_2_gds_all:
     input: vcff=expand(KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
     output:
-        temp_gds=temp("ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"),
+        temp_gds=temp("ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"),
     threads: 10
     script:
         "vcf2seq_gds.R"        
@@ -42,12 +48,12 @@ rule vcf_2_gds_all:
         
 rule subset_gds:
     input:
-       temp_gds="ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds",
-        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_{source}.RDS",
+       temp_gds="ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS",
         breakf=LD_break_file,
         panelf="EUR.samples"
     output:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
     threads: 10
     script:
         "gds_subset.R"        
@@ -73,17 +79,18 @@ rule dl_vcf_tbi:
 
 rule map_file_RDS:
     input:
-        mapf=expand(KG_dir+"1000-genomes-genetic-maps/interpolated_{{source}}/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
+        mapf=expand(KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
     output:
-        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_{source}.RDS"
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS"
     script:
         "map2RDS.R"
 
 rule ld_chunk_1kg:
     input:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_{source}.gds"
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
+        ldf="{LDchunk}.txt"
     output:
-        evdf=KG_dir+"EVD_H5/1KG_{source}_{LDchunk}.h5"
+        evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5"
     params:
         region_id="{LDchunk}"
     script:
