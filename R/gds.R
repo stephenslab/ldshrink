@@ -1,17 +1,68 @@
-read_SNPinfo_gds <- function(gds,alleles=F){
-  if(!alleles){
-    return(tibble::data_frame(SNP=seqGetData(gds,var.name="annotation/id"),
+read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
+
+    tdf <- tibble::data_frame(SNP=seqGetData(gds,var.name="annotation/id"),
                               snp_id=seqGetData(gds,var.name="variant.id"),
                               chr=seqGetData(gds,var.name="chromosome"),
-                              pos=seqGetData(gds,var.name="position")))
-  }else{
-    return(tibble::data_frame(SNP=seqGetData(gds,var.name="annotation/id"),
-                              snp_id=seqGetData(gds,var.name="variant.id"),
-                              chr=seqGetData(gds,var.name="chromosome"),
-                              pos=seqGetData(gds,var.name="position"),
-                              allele=seqGetData(gds,var.name="allele")))
+                              pos=seqGetData(gds,var.name="position"))
+    if(alleles){
+      tdf <- mutate(tdf,allele=seqGetData(gds,var.name="allele"))
+    }
+    if(MAF){
+      tdf <- mutate(tdf,MAF=seqAlleleFreq(gds))
+    }
+    return(tdf)
+}
+
+
+read_si_ql <- function(chunk_evdf){
+  library(RcppEigenH5)
+  library(tidyr)
+  library(dplyr)
+  retl <- list()
+  retl[["LDinfo"]] <- read_df_h5(chunk_evdf,"LDinfo") %>% nest(-region_id)
+  region_id <-  retl[["LDinfo"]][["region_id"]]
+  retl[["Dl"]] <- lapply(region_id,read_dvec,h5file=chunk_evdf,dataname="D")
+  names(retl[["Dl"]]) <- region_id
+  retl[["Ql"]] <- lapply(region_id,read_2d_mat_h5,h5file=chunk_evdf,dataname="Q")
+  names(retl[["Ql"]]) <- region_id
+  return(retl)
+}
+
+read_SNPinfo_ldsc <- function(gds){
+  return(tibble::data_frame(CHR=seqGetData(gds,var.name="chromosome"),
+                            SNP=seqGetData(gds,var.name="annotation/id"),
+                            BP=seqGetData(gds,var.name="position"),
+                            CM=seqGetData(gds,var.name="annotation/info/map"),
+                            MAF=seqAlleleFreq(gds)))
+}
+
+
+
+seqIMPUTE2GDS <- function(hap.fn,leg.fn,out.gdsfn,chrom=NULL,sample.fn,compress.geno="LZ4_RA.fast",compress.annotation="LZ4_RA.fast",optimize=T,digest=T,verbose=T){
+  library(readr)
+  library(dplyr)
+  library(SeqArray)
+  library(SNPRelate)
+  if(is.null(chrom)){
+    chrom <- gsub(".+chr([0-9]+)_.+","\\1",hap.fn)
   }
   
+  sample.id <- scan(sample.fn,what=character(),sep="\n")
+  sample.id <- sapply(sample.id,function(x)c(paste0(x,"-1"),paste0(x,"-2")))
+  leg_df <- read_delim(leg.fn,delim=" ") %>% mutate(allele=paste0(a0,",",a1),chrom=chrom)
+  geno_mat <- read_delim(hap.fn,delim=" ",col_names = F)
+  geno_mat <- data.matrix(geno_mat)
+  p <- nrow(geno_mat)
+  gc()
+  snpgdsCreateGeno(gds.fn = out.gdsfn,genmat = geno_mat,
+                   sample.id = sample.id,
+                   snp.id = 1:p,
+                   snp.rs.id = leg_df$id,
+                   snp.chromosome = leg_df$chrom,
+                   snp.position = leg_df$position,
+                   snp.allele = leg_df$allele,
+                   compress.annotation = compress.annotation,
+                   compress.geno = compress.geno)
 }
 
 
@@ -90,6 +141,13 @@ add_chunk_gds <- function(gds_file,region_bed_file){
   seqClose(gds)
   
 }
+
+calc_LD_gds <- function(gds,m=85,Ne=11490.672741,cutoff=1e-3){
+  map_dat <- seqGetData(gds,var.name="annotation/info/map")
+  H <- matrix(as.numeric(c(seqGetData(gds,var.name="genotype"))),length(map_dat),byrow = T)
+  stopifnot(max(H)==1)
+  return(calcLD(hmata = t(H),mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff))
+}
 chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.672741,cutoff=1e-3,evd=T){
   library(SeqArray)
   library(RcppEigenH5)
@@ -99,14 +157,18 @@ chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.6
   LD_chunks <- seqGetData(gds,var.name="annotation/info/LD_chunk")
   stopifnot(sum(LD_chunks%in%region_id)>0)
   seqSetFilter(gds,variant.sel=LD_chunks %in% region_id)
-  map_dat <- seqGetData(gds,var.name="annotation/info/map")
+
   si <- read_SNPinfo_gds(gds) %>% mutate(region_id=region_id)
-
-  H <- matrix(as.numeric(c(seqGetData(gds,var.name="genotype"))),length(map_dat),byrow = T)
-  stopifnot(max(H)==1)
-
-  R <- calcLD(hmata = t(H),mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff)
+  R <- calc_LD_gds(gds,m=m,Ne=Ne,cutoff=cutoff)
+  # map_dat <- seqGetData(gds,var.name="annotation/info/map")
+  # H <- matrix(as.numeric(c(seqGetData(gds,var.name="genotype"))),length(map_dat),byrow = T)
+  # stopifnot(max(H)==1)
+  # 
+  # R <- calcLD(hmata = t(H),mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff)
+  
   RcppEigenH5::write_df_h5(df=si,groupname = "LDinfo",outfile = outfile,deflate_level = 4)
+  tls <- h5ls(outfile)
+  stopifnot(any("/LDinfo/SNP" %in% tls))
   RcppEigenH5::write_mat_h5(outfile,groupname = "LD",dataname = "R",data = R,deflate_level = 4,doTranspose = F)
   if(evd){
     eigenR <- eigen(R)
@@ -116,6 +178,50 @@ chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.6
   }
   return(dim(R))
 }
+
+
+chunkwise_LDshrink_ldsc <- function(gds_file,chrom=19,out_dir=NULL,m=85,Ne=11490.672741,cutoff=1e-3){
+  library(SeqArray)
+  library(RcppEigenH5)
+  library(dplyr)
+
+
+  stopifnot(!is.null(gds_file),
+            file.exists(gds_file),
+            !is.null(out_dir),dir.exists(out_dir))
+  outfile <- file.path(out_dir,paste0(chrom,".l2.ldscore.gz"))
+  soutfile <- file.path(out_dir,paste0(chrom,".l2.M_5_50"))
+  gds <- seqOpen(gds_file,readonly = T)
+  # chroms <- seqGetData(gds,"chromosome")
+  seqSetFilterChrom(gds,include=as.character(chrom))
+  LD_chunks <- seqGetData(gds,var.name="annotation/info/LD_chunk")
+  region_ids <- unique(LD_chunks)
+  mfilt <- seqGetFilter(gds)
+  resl <- list()
+  library(progress)
+  pb <- progress::progress_bar$new(total=length(region_ids))
+  for(i in 1:length(region_ids)){
+    region_id <- region_ids[i]
+    tr <- LD_chunks %in% region_id
+    seqSetFilter(gds,variant.sel=tr,action="push+intersect")
+    si <- read_SNPinfo_ldsc(gds) 
+    R <- calc_LD_gds(gds,m = m,Ne = Ne,cutoff = cutoff)
+    si <- mutate(si,L2=colSums(R^2)-1)
+    resl[[i]] <- si
+    seqSetFilter(gds,action="pop")
+    tfilt <- seqGetFilter(gds)
+    stopifnot(all.equal(mfilt,tfilt))
+    pb$tick()
+  }
+  resdf <- bind_rows(resl)
+  write_delim(resdf,path=outfile,delim = "\t")
+  nc <- filter(resdf,MAF>0.05) %>% nrow
+  write(x = nc,file = soutfile)
+  return(dim(R))
+}
+
+
+
 
 
 

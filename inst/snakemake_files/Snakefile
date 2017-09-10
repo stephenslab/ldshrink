@@ -1,30 +1,149 @@
+import numpy as np
+import pandas as pd
 from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 FTP = FTPRemoteProvider()
 
-#KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
-KG_dir="../../../../../../group/xhe-lab/1KG/"
+KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
+#KG_dir="../../../../../../group/xhe-lab/1KG/"
 
 
 #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
 LD_break_file="fourier_ls-all.bed"
+
+LD_df=pd.read_csv(LD_break_file,delim_whitespace=True)
+LD_df['region_id']=LD_df.index+1
+def filter_chrom(df,chrom):
+    return list(df[df['chr']=="chr"+str(chrom)]['region_id'])
+
 TEMPF="temp_data.gds"
 
 #localrules: dl_panel_info
         # expand(KG_dir+"gds/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.gds",chr=range(1,23))
                 #KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+NREPS =4
+PVE=np.linspace(0.01,0.9,num=9)
+BIAS=np.linspace(0,0.1,num=3)
+TOT_SIM=NREPS*PVE.size*BIAS.size
+FGENEID=range(1,TOT_SIM+1)
+                #        dynamic()
+kgf=expand(KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",chrom=range(1,23))
+sim_gf=expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=range(1,TOT_SIM))
+n_simf=expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=range(1,TOT_SIM))
+
+        # expand(KG_dir+"RSSp_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID),
+        # expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID)
+
 rule all:
     input:
-        dynamic(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5")
+        expand(KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",chrom=range(1,22))
+#         logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_{fgeneid}.tsv",fgeneid=FGENEID,chrom="16",method=["RSSp","ldsc"],gwas=["gwas","direct"])
+# #        expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID)
 
 
+wildcard_constraints:
+    chrom="\d+"
+
+
+rule merge_LD_region:
+    input:
+        evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
+    output:
+        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+    script:
+        "concat_h5.R"
+rule ldsc_chunk:
+    input: gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+    params:
+        chrom="{chrom}",
+        outdir=KG_dir+"eur_w_ld_chr"
+    output:
+        outf=KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",
+        soutf=KG_dir+"eur_w_ld_chr/{chrom}.l2.M_5_50"
+    script:
+        "ldsc_chunk.R"
+
+rule RSSp_chrom:
+    input:
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
+        sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+    params:
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
+    output:
+        logf=expand(KG_dir+"RSSp_est_{{gwas}}_{{chrom}}/sim_{fgeneid}.tsv",fgeneid=FGENEID)
+    script:
+        "RSSP_chunk.R"
+
+rule ldsc_chrom_est:
+    input:
+        ldsc_f="ldsc/ldsc.py",
+        sumstatf=KG_dir+"ldsc_sim_{gwas}_{chrom}/sim_{fgeneid}.sumstats.gz",
+        chroml2=KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz"
+    params:
+        out_pref=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}",
+        ld_dir=KG_dir+"eur_w_ld_chr/"
+    output:
+        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.log"
+    shell:
+        "python2 ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
         
-rule t_ld_chunks:
+rule ldsc_parse_est:
+    input:
+        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.log",
+        tparamf=KG_dir+"ldsc_sim_{gwas}_{chrom}/sim_{fgeneid}_tparam.tsv"
+    output:
+        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.tsv"
+    params:
+        fgeneid="{fgeneid}"
+    script:
+        "parse_ldsc.R"
+    
+rule get_ldsc:
+    output:
+        "ldsc/ldsc.py"
+    shell:
+        "git clone https://github.com/bulik/ldsc.git"
+    
+rule sim_ldsc_chrom:
     input:
         gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+    params:
+        chrom="{chrom}",
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+        pve=PVE,
+        bias=BIAS,
+        nreps=NREPS
     output:
-        temp_chunkf=temp(dynamic("{LDchunk}.txt"))
+        outf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+        soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
     script:
-        "list_ld_regions.R"
+        "sim_chrom_ldsc.R"
+
+
+rule sim_ldsc_chrom_direct:
+    input:
+        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+    params:
+        chrom="{chrom}",
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+        pve=PVE,
+        bias=BIAS,
+        nreps=NREPS
+    output:
+        outf=expand(KG_dir+"ldsc_sim_direct_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+        soutf=expand(KG_dir+"ldsc_sim_direct_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
+    script:
+        "sim_chrom_ldsc_direct.R"
+        
+        
+# rule t_ld_chunks:
+#     input:
+#         gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+#     output:
+#         temp_chunkf="{LDchunk}.txt"
+#     script:
+#         "list_ld_regions.R"
 
 rule dl_panel_info:
     input:
@@ -38,9 +157,46 @@ rule dl_panel_info:
         "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
 
 
+# rule vcf_filt_hap:
+#     input:
+#         vcff=KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+#         panelf="EUR.samples"
+        
+#     output:
+#         KG_dir+"_filt/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+rule impute_2_snpgds:
+    input:
+        hapf=KG_dir+"impute/ALL.chr{chr}.hap.gz",
+        legf=KG_dir+"impute/ALL.chr{chr}.legend.gz",
+        filt_f="EUR.samples"
+    params:
+        chrom="{chr}"
+    output:
+        gdsf=KG_dir+"snp_gds/ALL.chr{chr}.snp_gds"
+    script:
+        "impute_2_snpgds.R"
 
+    
+
+
+rule vcf_2_impute:
+    input:
+        vcff=KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+        filt_f="EUR.samples"
+    params:
+        out_pref=KG_dir+"impute/ALL.chr{chr}"
+    output:
+        hapf=KG_dir+"impute/ALL.chr{chr}.hap.gz",
+        legf=KG_dir+"impute/ALL.chr{chr}.legend.gz"
+    shell:
+        "vcftools --gzvcf {input.vcff} --IMPUTE --out {params.out_pref} --keep {input.filt_f} --min-alleles 2 --max-alleles 2 --maf 0.05"
+
+        
+     
+    
 rule vcf_2_gds_all:
-    input: vcff=expand(KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
+    input:
+        vcff=expand(KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
     output:
         temp_gds=temp("ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"),
     threads: 10
@@ -50,12 +206,11 @@ rule vcf_2_gds_all:
         
 rule subset_gds:
     input:
-       temp_gds="ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
+       temp_gds=expand("snp_gds/ALL.chr{chr}.snp_gds",chr=range(1,23)),
         mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS",
-        breakf=LD_break_file,
-        panelf="EUR.samples"
+        breakf=LD_break_file
     output:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
     threads: 10
     script:
         "gds_subset.R"        
@@ -89,10 +244,10 @@ rule map_file_RDS:
 
 rule ld_chunk_1kg:
     input:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
-        ldf="{LDchunk}.txt"
+        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+#        ldf="{LDchunk}.txt"
     output:
-        evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5"
+        evdf=temp(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5")
     params:
         region_id="{LDchunk}"
     script:
@@ -109,8 +264,6 @@ rule extract_cell_array:
     run:
         import h5py
         import numpy as np
-
-
         with h5py.File(input.filename,'r') as f:
             data = [ f[element[0]][:] for element in f[params.groupname]]
 
