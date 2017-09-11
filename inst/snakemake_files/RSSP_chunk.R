@@ -27,17 +27,9 @@ uh_mat <- select(a_sumdata,SNP,Z,fgeneid) %>% spread(fgeneid,Z) %>% select(-SNP)
 
 
 ret_dfl <- RSSp_run_mat(Ql_df,uh_mat,n)
+tret_df <- bind_rows(ret_dfl)
+write_delim(tret_df, path = outf, delim = "\t")
 
-
-for (i in 1:length(ret_dfl)){
-    tret_df <- ret_dfl[[i]]
-
-    tfgeneid <- tret_df$fgeneid
-    j <- which(tfgeneid ==mfgeneid)
-    stopifnot(mfgeneid[j]==tfgeneid)
-
-    write_delim(tret_df, path = outf[j], delim = "\t")
-}
 
 
 

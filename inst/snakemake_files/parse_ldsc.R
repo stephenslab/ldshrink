@@ -9,10 +9,16 @@ fgeneid <- snakemake@params[["fgeneid"]]
 outf <- snakemake@output[["logf"]]
 
 #save.image()
-res_df <- parse_ldsc_h2log(inf) %>%
-    mutate(fgeneid = as.character(fgeneid))
+res_df <- map2_dfr(inf,fgeneid,function(filen,genen){
+    parse_ldsc_h2log(filen) %>%
+        mutate(fgeneid = as.character(genen)) %>% filter(Variable!="Ratio")%>% select(-SD)
+}
+) %>% spread(Variable,Est)
 
-res_df <- read_delim(tpf,delim="\t") %>%
-    mutate(fgeneid = as.character(fgeneid)) %>%
-    inner_join(res_df)
+
+res_df <- map2_dfr(tpf,fgeneid,function(filen,genen){
+    read_delim(filen, delim = "\t") %>%
+        mutate(fgeneid = as.character(genen))
+}
+)%>%inner_join(res_df)
 write_delim(res_df, path = outf, delim = "\t")

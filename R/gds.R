@@ -38,32 +38,7 @@ read_SNPinfo_ldsc <- function(gds){
 
 
 
-seqIMPUTE2GDS <- function(hap.fn,leg.fn,out.gdsfn,chrom=NULL,sample.fn,compress.geno="LZ4_RA.fast",compress.annotation="LZ4_RA.fast",optimize=T,digest=T,verbose=T){
-  library(readr)
-  library(dplyr)
-  library(SeqArray)
-  library(SNPRelate)
-  if(is.null(chrom)){
-    chrom <- gsub(".+chr([0-9]+)_.+","\\1",hap.fn)
-  }
-  
-  sample.id <- scan(sample.fn,what=character(),sep="\n")
-  sample.id <- sapply(sample.id,function(x)c(paste0(x,"-1"),paste0(x,"-2")))
-  leg_df <- read_delim(leg.fn,delim=" ") %>% mutate(allele=paste0(a0,",",a1),chrom=chrom)
-  geno_mat <- read_delim(hap.fn,delim=" ",col_names = F)
-  geno_mat <- data.matrix(geno_mat)
-  p <- nrow(geno_mat)
-  gc()
-  snpgdsCreateGeno(gds.fn = out.gdsfn,genmat = geno_mat,
-                   sample.id = sample.id,
-                   snp.id = 1:p,
-                   snp.rs.id = leg_df$id,
-                   snp.chromosome = leg_df$chrom,
-                   snp.position = leg_df$position,
-                   snp.allele = leg_df$allele,
-                   compress.annotation = compress.annotation,
-                   compress.geno = compress.geno)
-}
+
 
 
 is_SNV <- function(allelevec){
@@ -83,18 +58,26 @@ import_panel_data <- function(temp_gds=NULL,
   library(purrr)
   library(readr)
   stopifnot(!is.null(output_file),
-            all(file.exists(temp_gds)),!is.null(ld_break_file))
+            !is.null(map_df),
+            all(file.exists(temp_gds)),
+            !is.null(ld_break_file))
 
     stopifnot(file.exists(ld_break_file))
 
   if(file.exists(output_file)){
-    stopifnot(overwrite)
+    stopifnot(overwrite) 
     file.remove(output_file)
   }
   seqMerge(temp_gds,output_file,storage.option="LZ4_RA.fast")
-#  gds <- seqOpen(output_file,readonly = F)
+  
+  gds <- seqOpen(output_file,readonly = F)
+  leg_df <- read_SNPinfo_gds(gds) %>% left_join(map_df)
+  stopifnot(nrow(leg_df)==length(seqGetData(gds,"variant.id")))
 
+
+  gdsfmt::add.gdsn(index.gdsn(gds,"annotation/info"),"map",leg_df$map,replace=T,compress="LZ4_RA.fast")
   cat("Adding Chunk Delimiters\n")
+  seqClose(gds)
   add_chunk_gds(output_file,ld_break_file)
 }
 
@@ -117,10 +100,13 @@ add_chunk_gds <- function(gds_file,region_bed_file){
 
 calc_LD_gds <- function(gds,m=85,Ne=11490.672741,cutoff=1e-3){
   map_dat <- seqGetData(gds,var.name="annotation/info/map")
-  H <- matrix(as.numeric(c(seqGetData(gds,var.name="genotype"))),length(map_dat),byrow = T)
+  H <- matrix(2-as.numeric(seqGetData(gds,var.name="$dosage")),length(map_dat))
   stopifnot(max(H)==1)
-  return(calcLD(hmata = t(H),mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff))
+  return(calcLD(hmata = H,mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff))
 }
+
+    
+
 chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.672741,cutoff=1e-3,evd=T){
   library(SeqArray)
   library(RcppEigenH5)
@@ -134,7 +120,6 @@ chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.6
   si <- read_SNPinfo_gds(gds) %>% mutate(region_id=region_id)
   R <- calc_LD_gds(gds,m=m,Ne=Ne,cutoff=cutoff)
   # map_dat <- seqGetData(gds,var.name="annotation/info/map")
-  # H <- matrix(as.numeric(c(seqGetData(gds,var.name="genotype"))),length(map_dat),byrow = T)
   # stopifnot(max(H)==1)
   # 
   # R <- calcLD(hmata = t(H),mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff)

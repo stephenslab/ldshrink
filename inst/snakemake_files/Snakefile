@@ -30,21 +30,38 @@ kgf=expand(KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",chrom=range(1,23))
 sim_gf=expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=range(1,TOT_SIM))
 n_simf=expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=range(1,TOT_SIM))
 
-        # expand(KG_dir+"RSSp_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID),
+        # 
         # expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID)
         # legf=KG_dir+"gds/ALL_seq_hapmap.gds"
 rule all:
     input:
-        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
+        logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_results.tsv",
+                    chrom="16",method=["RSSp","ldsc"],gwas=["gwas","direct"])
+
+        
 
 
-#         logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_{fgeneid}.tsv",fgeneid=FGENEID,chrom="16",method=["RSSp","ldsc"],gwas=["gwas","direct"])
+#         
 # #        expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID)
 
 
 wildcard_constraints:
     chrom="\d+"
 
+
+        
+rule subset_gds:
+    input:
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS",
+        temp_gds=expand(KG_dir+"gds/ALL.chr{chr}.gds",chr=range(1,23)),
+        breakf=LD_break_file
+    output:
+        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
+    threads: 1
+    script:
+        "gds_subset.R"        
+
+    
 
 rule merge_LD_region:
     input:
@@ -54,7 +71,8 @@ rule merge_LD_region:
     script:
         "concat_h5.R"
 rule ldsc_chunk:
-    input: gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+    input:
+        gdsf=rules.subset_gds.output.gdsf
     params:
         chrom="{chrom}",
         outdir=KG_dir+"eur_w_ld_chr"
@@ -66,13 +84,13 @@ rule ldsc_chunk:
 
 rule RSSp_chrom:
     input:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds",
+        gdsf=rules.subset_gds.output.gdsf
         sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
     params:
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
     output:
-        logf=expand(KG_dir+"RSSp_est_{{gwas}}_{{chrom}}/sim_{fgeneid}.tsv",fgeneid=FGENEID)
+        logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.tsv"
     script:
         "RSSP_chunk.R"
 
@@ -91,12 +109,12 @@ rule ldsc_chrom_est:
         
 rule ldsc_parse_est:
     input:
-        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.log",
-        tparamf=KG_dir+"ldsc_sim_{gwas}_{chrom}/sim_{fgeneid}_tparam.tsv"
+        logf=expand(KG_dir+"ldsc_est_{{gwas}}_{{chrom}}/sim_{fgeneid}.log",fgeneid=FGENEID),
+        tparamf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
     output:
-        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.tsv"
+        logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_results.tsv"
     params:
-        fgeneid="{fgeneid}"
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
     script:
         "parse_ldsc.R"
     
@@ -108,7 +126,7 @@ rule get_ldsc:
     
 rule sim_ldsc_chrom:
     input:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+        gdsf=rules.subset_gds.output.gdsf
     params:
         chrom="{chrom}",
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
@@ -125,7 +143,8 @@ rule sim_ldsc_chrom:
 rule sim_ldsc_chrom_direct:
     input:
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+        gdsf=rules.subset_gds.output.gdsf
+
     params:
         chrom="{chrom}",
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
@@ -213,16 +232,7 @@ rule vcf_2_gds_all:
 #         temp_seq="snp_gds/ALL.chr{chr}.seq_gds"
 #     script:
 #         "snp_2_seqgds.R"
-        
-rule subset_gds:
-    input:
-        temp_gds=expand(KG_dir+"gds/ALL.chr{chr}.gds",chr=range(1,23)),
-        breakf=LD_break_file
-    output:
-        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
-    threads: 1
-    script:
-        "gds_subset.R"        
+
         
 # rule dl_vcf:
 #     input:
@@ -280,4 +290,3 @@ rule extract_cell_array:
             for i in range(len(data)):
                 wf.create_dataset(params.groupname+'/'+str(i),data[i].shape,data=data[i])
                 
-    
