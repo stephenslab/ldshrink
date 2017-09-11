@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
-FTP = FTPRemoteProvider()
+# from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
+# FTP = FTPRemoteProvider()
 
-KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
-#KG_dir="../../../../../../group/xhe-lab/1KG/"
+#KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
+KG_dir="../../../../../../group/xhe-lab/1KG/"
 
 
 #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
@@ -32,10 +32,12 @@ n_simf=expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=range(1,TOT_SIM))
 
         # expand(KG_dir+"RSSp_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID),
         # expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID)
-
+        # legf=KG_dir+"gds/ALL_seq_hapmap.gds"
 rule all:
     input:
-        expand(KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",chrom=range(1,22))
+        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
+
+
 #         logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_{fgeneid}.tsv",fgeneid=FGENEID,chrom="16",method=["RSSp","ldsc"],gwas=["gwas","direct"])
 # #        expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID)
 
@@ -145,16 +147,16 @@ rule sim_ldsc_chrom_direct:
 #     script:
 #         "list_ld_regions.R"
 
-rule dl_panel_info:
-    input:
-        FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel",
-                   keep_local=True)
-    params:
-        pop="EUR"
-    output:
-        outf="EUR.samples"
-    shell:
-        "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
+# rule dl_panel_info:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel",
+#                    keep_local=True)
+#     params:
+#         pop="EUR"
+#     output:
+#         outf="EUR.samples"
+#     shell:
+#         "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
 
 
 # rule vcf_filt_hap:
@@ -166,15 +168,16 @@ rule dl_panel_info:
 #         KG_dir+"_filt/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
 rule impute_2_snpgds:
     input:
-        hapf=KG_dir+"impute/ALL.chr{chr}.hap.gz",
-        legf=KG_dir+"impute/ALL.chr{chr}.legend.gz",
+        hapf=KG_dir+"impute/ALL.chr{chr}.impute.hap",
+        legf=KG_dir+"impute/ALL.chr{chr}.impute.legend",
+        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap/chr{chr}.interpolated_genetic_map.gz",
         filt_f="EUR.samples"
     params:
         chrom="{chr}"
     output:
-        gdsf=KG_dir+"snp_gds/ALL.chr{chr}.snp_gds"
+        gdsf=KG_dir+"gds/ALL.chr{chr}.gds"
     script:
-        "impute_2_snpgds.R"
+        "impute_2_seqgds.R"
 
     
 
@@ -186,8 +189,8 @@ rule vcf_2_impute:
     params:
         out_pref=KG_dir+"impute/ALL.chr{chr}"
     output:
-        hapf=KG_dir+"impute/ALL.chr{chr}.hap.gz",
-        legf=KG_dir+"impute/ALL.chr{chr}.legend.gz"
+        hapf=KG_dir+"impute/ALL.chr{chr}.impute.hap",
+        legf=KG_dir+"impute/ALL.chr{chr}.impute.legend"
     shell:
         "vcftools --gzvcf {input.vcff} --IMPUTE --out {params.out_pref} --keep {input.filt_f} --min-alleles 2 --max-alleles 2 --maf 0.05"
 
@@ -203,15 +206,21 @@ rule vcf_2_gds_all:
     script:
         "vcf2seq_gds.R"        
 
+# rule snpgds_2_seqgds:
+#     input:
+#         temp_gds="snp_gds/ALL.chr{chr}.snp_gds"
+#     output:
+#         temp_seq="snp_gds/ALL.chr{chr}.seq_gds"
+#     script:
+#         "snp_2_seqgds.R"
         
 rule subset_gds:
     input:
-       temp_gds=expand("snp_gds/ALL.chr{chr}.snp_gds",chr=range(1,23)),
-        mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS",
+        temp_gds=expand(KG_dir+"gds/ALL.chr{chr}.gds",chr=range(1,23)),
         breakf=LD_break_file
     output:
         gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
-    threads: 10
+    threads: 1
     script:
         "gds_subset.R"        
         

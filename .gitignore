@@ -7,5 +7,6 @@ src/*.so
 src/*.dll
 compile_commands.json
 inst/snakemake_files/*txt
+inst/snakemake_files/snakejob*
 *~
 *.snakemake*

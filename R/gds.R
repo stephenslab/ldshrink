@@ -77,18 +77,13 @@ import_panel_data <- function(temp_gds=NULL,
                               output_file=NULL,
                               overwrite=F,
                               parallel=1,
-                              panel_ind_file=NULL,
-                              ld_break_file=NULL,
-                              subset_MAF=0,remove_multi_allelic=T,snv_only=T){
+                              ld_break_file=NULL){
   library(SeqArray)
   library(dplyr)
   library(purrr)
   library(readr)
   stopifnot(!is.null(output_file),
-            !is.null(panel_ind_file),
-            file.exists(panel_ind_file),
-            file.exists(temp_gds),
-            !is.null(map_df),!is.null(ld_break_file))
+            all(file.exists(temp_gds)),!is.null(ld_break_file))
 
     stopifnot(file.exists(ld_break_file))
 
@@ -96,31 +91,9 @@ import_panel_data <- function(temp_gds=NULL,
     stopifnot(overwrite)
     file.remove(output_file)
   }
-  sub_ind=scan(panel_ind_file,what=character())
-  gc()
-#  temp_gds <- tempfile()
+  seqMerge(temp_gds,output_file,storage.option="LZ4_RA.fast")
+#  gds <- seqOpen(output_file,readonly = F)
 
-  gds <- seqOpen(temp_gds,readonly = F)
-  seqSetFilter(gds,sample.id=sub_ind)
-  seqSetFilterCond(gds,maf=subset_MAF,parallel = parallel,.progress = T)
-
-  gds_snpinfo <- read_SNPinfo_gds(gds,alleles = T) %>% mutate(Num_Alleles=seqNumAllele(gds),is_SNV=is_SNV(allele))
-  
-  if(remove_multi_allelic){
-    gds_snpinfo <- filter(gds_snpinfo,Num_Alleles==2)
-  }
-  if(snv_only){
-    gds_snpinfo <- filter(gds_snpinfo,is_SNV)
-  }
-  b_gds_snpinfo <- inner_join(gds_snpinfo,map_df)
-  
-  seqSetFilter(gds,variant.id=b_gds_snpinfo$snp_id,action="intersect")
-  seqExport(gdsfile = gds,out.fn = output_file)
-  seqClose(gds)
-  cat("Adding mapAnnotation\n")
-  gds <- seqOpen(output_file,readonly = F)
-  gdsfmt::add.gdsn(index.gdsn(gds,"annotation/info"),"map",b_gds_snpinfo$map,replace=T,compress="LZ4_RA.fast")
-  seqClose(gds)
   cat("Adding Chunk Delimiters\n")
   add_chunk_gds(output_file,ld_break_file)
 }
