@@ -70,6 +70,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// haplo_2_geno
+Eigen::MatrixXd haplo_2_geno(const Eigen::MatrixXd haplo, bool snps_in_rows);
+RcppExport SEXP _LDshrink_haplo_2_geno(SEXP haploSEXP, SEXP snps_in_rowsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type haplo(haploSEXP);
+    Rcpp::traits::input_parameter< bool >::type snps_in_rows(snps_in_rowsSEXP);
+    rcpp_result_gen = Rcpp::wrap(haplo_2_geno(haplo, snps_in_rows));
+    return rcpp_result_gen;
+END_RCPP
+}
+// haplo_2_geno_i
+Eigen::MatrixXi haplo_2_geno_i(const Eigen::MatrixXi haplo, bool snps_in_rows);
+RcppExport SEXP _LDshrink_haplo_2_geno_i(SEXP haploSEXP, SEXP snps_in_rowsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXi >::type haplo(haploSEXP);
+    Rcpp::traits::input_parameter< bool >::type snps_in_rows(snps_in_rowsSEXP);
+    rcpp_result_gen = Rcpp::wrap(haplo_2_geno_i(haplo, snps_in_rows));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calc_spve_naive
 double calc_spve_naive(const Matrix_external R, const arrayxd_external beta, const arrayxd_external beta_hat, const arrayxd_external se_hat, const int n);
 RcppExport SEXP _LDshrink_calc_spve_naive(SEXP RSEXP, SEXP betaSEXP, SEXP beta_hatSEXP, SEXP se_hatSEXP, SEXP nSEXP) {
@@ -245,6 +269,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_cov_2_cor_exp_p", (DL_FUNC) &_LDshrink_cov_2_cor_exp_p, 3},
     {"_LDshrink_eigen_dist", (DL_FUNC) &_LDshrink_eigen_dist, 2},
     {"_LDshrink_calcLD_par", (DL_FUNC) &_LDshrink_calcLD_par, 4},
+    {"_LDshrink_haplo_2_geno", (DL_FUNC) &_LDshrink_haplo_2_geno, 2},
+    {"_LDshrink_haplo_2_geno_i", (DL_FUNC) &_LDshrink_haplo_2_geno_i, 2},
     {"_LDshrink_calc_spve_naive", (DL_FUNC) &_LDshrink_calc_spve_naive, 5},
     {"_LDshrink_approx_diag", (DL_FUNC) &_LDshrink_approx_diag, 2},
     {"_LDshrink_calc_spve", (DL_FUNC) &_LDshrink_calc_spve, 5},

@@ -105,6 +105,15 @@ calc_LD_gds <- function(gds,m=85,Ne=11490.672741,cutoff=1e-3){
   return(calcLD(hmata = H,mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff))
 }
 
+is_haplo <- function(gds,checkSNPs=F){
+  samples <- seqGetData(gds,"sample.id")
+  sample_trim <- substr(samples,1,nchar(samples)-2)
+  if(all(names(table(table(sample_trim)))=="2")){
+    return(T)
+  }
+  return(F)
+}
+
     
 
 chunkwise_LDshrink <- function(gds_file,region_id=1,outfile=NULL,m=85,Ne=11490.672741,cutoff=1e-3,evd=T){
@@ -179,7 +188,15 @@ chunkwise_LDshrink_ldsc <- function(gds_file,chrom=19,out_dir=NULL,m=85,Ne=11490
 }
 
 
-
-
+# 
+# haplo_2_geno<-function(x,snps_in_rows=T){
+#   if(snps_in_rows){
+#     return(apply(array(c(x),dim=c(2,ncol(x)/2,nrow(x))),c(2,3),sum))
+#   }
+#   else{
+#     return(apply(array(c(t(x)),dim=c(2,nrow(x)/2,ncol(x))),c(2,3),sum))
+#   }
+# }
+  
 
 

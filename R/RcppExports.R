@@ -21,6 +21,14 @@ calcLD_par <- function(hmat, map, ldparams, id) {
     .Call('_LDshrink_calcLD_par', PACKAGE = 'LDshrink', hmat, map, ldparams, id)
 }
 
+haplo_2_geno <- function(haplo, snps_in_rows = TRUE) {
+    .Call('_LDshrink_haplo_2_geno', PACKAGE = 'LDshrink', haplo, snps_in_rows)
+}
+
+haplo_2_geno_i <- function(haplo, snps_in_rows = TRUE) {
+    .Call('_LDshrink_haplo_2_geno_i', PACKAGE = 'LDshrink', haplo, snps_in_rows)
+}
+
 calc_spve_naive <- function(R, beta, beta_hat, se_hat, n) {
     .Call('_LDshrink_calc_spve_naive', PACKAGE = 'LDshrink', R, beta, beta_hat, se_hat, n)
 }
