@@ -1,6 +1,7 @@
 library(readr)
 library(dplyr)
 library(SeqArray)
+library(LDshrink)
 library(SNPRelate)
 
 hap.fn <- snakemake@input[["hapf"]]
