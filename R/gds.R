@@ -100,7 +100,7 @@ add_chunk_gds <- function(gds_file,region_bed_file){
 
 calc_LD_gds <- function(gds,m=85,Ne=11490.672741,cutoff=1e-3){
   map_dat <- seqGetData(gds,var.name="annotation/info/map")
-  H <- matrix(2-as.numeric(seqGetData(gds,var.name="$dosage")),length(map_dat))
+  H <- 2.0-seqGetData(gds,var.name="$dosage")
   stopifnot(max(H)==1)
   return(calcLD(hmata = H,mapa = map_dat,m = m,Ne = Ne,cutoff = cutoff))
 }

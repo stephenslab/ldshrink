@@ -3,8 +3,8 @@ import pandas as pd
 # from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 # FTP = FTPRemoteProvider()
 
-KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
-#KG_dir="../../../../../../group/xhe-lab/1KG/"
+#KG_dir="../../../../../../../media/nwknoblauch/Data/1kg/"
+KG_dir="../../../../../../group/xhe-lab/1KG/"
 
 
 #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
@@ -38,6 +38,7 @@ rule all:
         logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_results.tsv",
                     chrom="16",method=["RSSp","ldsc"],gwas=["gwas","direct"])
 
+
         
 
 
@@ -57,7 +58,7 @@ rule subset_gds:
         geno_gdsf=expand(KG_dir+"gds/ALL.chr{chr}_geno.gds",chr=range(1,23)),
         breakf=LD_break_file
     output:
-        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds"
+        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds",
         geno_gdsf=KG_dir+"gds/ALL_seq_hapmap_geno.gds"
     threads: 1
     script:
@@ -86,7 +87,7 @@ rule ldsc_chunk:
 
 rule RSSp_chrom:
     input:
-        gdsf=rules.subset_gds.output.gdsf
+        gdsf=rules.subset_gds.output.geno_gdsf,
         sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
     params:
@@ -128,7 +129,7 @@ rule get_ldsc:
     
 rule sim_ldsc_chrom:
     input:
-        gdsf=rules.subset_gds.output.gdsf
+        gdsf=rules.subset_gds.output.geno_gdsf
     params:
         chrom="{chrom}",
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
@@ -145,8 +146,7 @@ rule sim_ldsc_chrom:
 rule sim_ldsc_chrom_direct:
     input:
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",
-        gdsf=rules.subset_gds.output.gdsf
-
+        gdsf=rules.subset_gds.output.geno_gdsf
     params:
         chrom="{chrom}",
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
@@ -189,7 +189,6 @@ rule sim_ldsc_chrom_direct:
 #         KG_dir+"_filt/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
 rule impute_2_snpgds:
     input:
-
         hapf=KG_dir+"impute/ALL.chr{chr}.impute.hap",
         legf=KG_dir+"impute/ALL.chr{chr}.impute.legend",
         mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap/chr{chr}.interpolated_genetic_map.gz",
