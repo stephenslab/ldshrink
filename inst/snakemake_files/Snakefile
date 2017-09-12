@@ -21,9 +21,9 @@ TEMPF="temp_data.gds"
         # expand(KG_dir+"gds/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.gds",chr=range(1,23))
                 #KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
 NREPS =4
-PVE=np.linspace(0.01,0.9,num=9)
-BIAS=np.linspace(0,0.1,num=3)
-TOT_SIM=NREPS*PVE.size*BIAS.size
+PVE=list(np.linspace(0.01,0.9,num=9))
+BIAS=list(np.linspace(0,0.1,num=3))
+TOT_SIM=NREPS*len(PVE)*len(BIAS)
 FGENEID=range(1,TOT_SIM+1)
                 #        dynamic()
 kgf=expand(KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",chrom=range(1,23))
@@ -108,7 +108,7 @@ rule ldsc_chrom_est:
     output:
         logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.log"
     shell:
-        "python2 ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
+        "module load python/2.7.13; source activate ~/python2_project/bin/activate; ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
         
 rule ldsc_parse_est:
     input:
@@ -266,8 +266,7 @@ rule map_file_RDS:
 
 rule ld_chunk_1kg:
     input:
-        gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
-#        ldf="{LDchunk}.txt"
+        gdsf=rules.subset_gds.output.gdsf
     output:
         evdf=temp(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5")
     params:

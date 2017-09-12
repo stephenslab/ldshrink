@@ -12,6 +12,7 @@ pb <- progress_bar$new(total = nchunks)
 ld_l <- list()
 mat_l <- list()
 D_l <- list()
+save.image()
 for (i in 1:nchunks){
     x <- inf[i]
     ldi <- read_df_h5(x, "LDinfo")
