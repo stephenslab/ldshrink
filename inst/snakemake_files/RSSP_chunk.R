@@ -8,6 +8,7 @@ library(LDshrink)
 gdsf <- snakemake@input[["gdsf"]]
 evd_chunkf <- snakemake@input[["evd_chunkf"]]
 sumstatf <- snakemake@input[["sumstatf"]]
+tparamf <- snakemake@input[["tparamf"]]
 mfgeneid <- as.character(snakemake@params[["fgeneid"]])
 
 outf <- snakemake@output[["logf"]]

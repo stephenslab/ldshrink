@@ -256,7 +256,9 @@ Eigen::MatrixXd calcLD(const c_Matrix_internal hmata,const c_arrayxd_internal ma
   
   double theta=calc_theta(m);
   Eigen::MatrixXd S= calc_cov(hmata);
-  S*=0.5;
+  if(isGeno){
+    S*=0.5;
+  }
   int numSNP=S.rows();
   S.triangularView<Eigen::StrictlyLower>().setZero();
   std::vector<double> mapv;

@@ -15,19 +15,21 @@ outf <- snakemake@output[["outf"]]
 soutf <- snakemake@output[["soutf"]]
 
 
-save.image()
-
+#save.image()
+#stop()
 Ql_df <- read_si_ql(evdf)
 Ql <- Ql_df[["Ql"]]
 Dl <- Ql_df[["Dl"]]
 
 
-
+cat("Opening gds\n")
 gds <- seqOpen(gdsf, readonly = T)
+cat("Filtering gds\n")
 seqSetFilterChrom(gds, chrom)
 
 n <- length(seqGetData(gds, "sample.id"))
 p <- length(seqGetData(gds, "variant.id"))
+
 
 res_l <- gen_sim_gds_direct_ldsc(Ql = Ql, Dl = Dl, gds = gds,
                                  pve = pve, bias = bias,
@@ -37,9 +39,12 @@ stopifnot(all(sort(names(res_l$ldsc_df_l)) == sort(mfgeneid)))
 tparam_df <- mutate(gen_tparamdf_norm(pve = pve,bias = bias,nreps = nreps,n = n,p = p,fgeneid = mfgeneid),
                     n = n, p = p)
 
+library(progress)
+pb <- progress_bar$new(total=length(res_l$ldsc_df_l))
 for (i in names(res_l$ldsc_df_l)){
     stopifnot(nrow(res_l$ldsc_df_l[[i]]) == p)
     write_delim(res_l$ldsc_df_l[[i]], path = outf[as.integer(i)], delim = "\t")
     ttparam_df <- tparam_df %>% filter(fgeneid == i)
     write_delim(ttparam_df, path = soutf[as.integer(i)], delim = "\t")
+    pb$tick()
 }

@@ -26,10 +26,31 @@ mpve <- tparam_df$tpve
 mbias <- tparam_df$tbias
 
 
-
+save.image()
+# stop()
 res_l <- gen_sim_gds_ldsc(gds, pve = pve, bias = bias,
                           nreps = nreps, fgeneid = c(mfgeneid))
 stopifnot(all(sort(names(res_l$ldsc_df_l))==sort(mfgeneid)))
+
+
+#Generate a large block-diagonal matrix
+read_si_ql <- function(chunk_evdf){
+  library(RcppEigenH5)
+  library(tidyr)
+  library(dplyr)
+
+  retl <- list()
+  retl[["LDinfo"]] <- read_df_h5(chunk_evdf,"LDinfo") %>% nest(-region_id)
+  region_id <-  retl[["LDinfo"]][["region_id"]]
+  retl[["Dl"]] <- lapply(region_id,read_dvec,h5file=chunk_evdf,dataname="D")
+  
+  names(retl[["Dl"]]) <- region_id
+  retl[["Ql"]] <- lapply(region_id,read_2d_mat_h5,h5file=chunk_evdf,dataname="Q")
+  names(retl[["Ql"]]) <- region_id
+  return(retl)
+}
+all_rssp <- prep_RSSp_evd(Ql=ql_df$Ql,Dl=ql_df$Dl,U = res_l$bias_uh_mat,N = res_l$n)
+est_sim()
 
 for (i in names(res_l$ldsc_df_l)){
     stopifnot(nrow(res_l$ldsc_df_l[[i]]) == p)

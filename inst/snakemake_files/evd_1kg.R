@@ -8,7 +8,7 @@ outf <- snakemake@output[["evdf"]]
 region_id <- as.integer(as.numeric(snakemake@params[["region_id"]]))
 
 
-
+# save.image()
 stopifnot(!is.null(region_id), !is.null(gdsf), !is.null(outf))
 
 stopifnot(file.exists(gdsf), !file.exists(outf))

@@ -85,7 +85,10 @@ read_eigen_chunks <- function(evdf, chunksize) {
         rdl[[i]] <- RcppEigenH5::read_dvec(h5file = evdf, groupname = chunk_grp, dataname = "D")
         indl[[i]] <- RcppEigenH5::read_ivec(h5file = evdf, groupname = chunk_grp, dataname = "ind")
     }
-    return(list(Ql = Ql, rdl = rdl, indl = indl))
+    names(Ql) <- chunk_grps
+    names(rdl) <- chunk_grps
+    names(indl) <- chunk_grps
+    return(list(Ql = Ql, Dl = rdl, indl = indl))
 }
 
 
