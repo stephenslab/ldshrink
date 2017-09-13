@@ -15,7 +15,7 @@ read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
 
 
 
-read_
+#read_
 
 read_si_ql <- function(chunk_evdf){
   library(RcppEigenH5)
