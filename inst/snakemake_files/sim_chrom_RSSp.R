@@ -9,8 +9,7 @@ mfgeneid <- as.character(snakemake@params[["fgeneid"]])
 pve <- as.numeric(snakemake@params[["pve"]])
 bias <- as.numeric(snakemake@params[["bias"]])
 nreps <- as.integer(as.numeric(snakemake@params[["nreps"]]))
-outf <- snakemake@output[["outf"]]
-soutf <- snakemake@output[["soutf"]]
+
 rdsf <- snakemake@output[["rdsf"]]
 
 
@@ -30,21 +29,8 @@ mbias <- tparam_df$tbias
 
 save.image()
 
-res_l <- gen_sim_gds_ldsc(gds, pve = pve, bias = bias,
+res_l <- gen_sim_gds(gds, pve = pve, bias = bias,
                           nreps = nreps, fgeneid = c(mfgeneid))
 
 saveRDS(res_l,rdsf)
-stopifnot(all(sort(names(res_l$ldsc_df_l))==sort(mfgeneid)))
 
-# 
-# all_rssp <- prep_RSSp_evd(Ql=ql_df$Ql,Dl=ql_df$Dl,U = res_l$bias_uh_mat,N = res_l$n)
-# est_sim()
-
-for (i in names(res_l$ldsc_df_l)){
-    stopifnot(nrow(res_l$ldsc_df_l[[i]]) == p)
-    write_delim(res_l$ldsc_df_l[[i]], path = outf[as.integer(i)], delim = "\t")
-    tparam_df <- mutate(res_l[["tparam_df"]],
-                        n = res_l[["n"]], p = res_l[["p"]]) %>%
-        filter(fgeneid == i)
-    write_delim(tparam_df, path = soutf[as.integer(i)], delim = "\t")
-}

@@ -14,8 +14,22 @@ read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
 }
 
 
+mult_eigen_chunks <- function(chunk_evdf,uhmat){
+  library(RcppEigenH5)
+  library(tidyr)
+  library(dplyr)
+  library(progress)
+  retl <- list()
+  retl[["LDinfo"]] <- read_df_h5(chunk_evdf,"LDinfo")
+  region_id <-  unique(retl[["LDinfo"]][["region_id"]])
 
-read_
+  retl[["D"]] <-  unlist(lapply(region_id,read_dvec,h5file=chunk_evdf,dataname="D"))
+  stopifnot(length(retl$LDinfo$SNP)==length(retl$D))
+  stopifnot(!is.unsorted(retl$LDinfo$snp_id))
+  retl$LDinfo$snp_id <- retl$LDinfo$snp_id-min(retl$LDinfo$snp_id)+1
+  return(sparse_matmul(chunk_evdf,as.character(region_id),rep("Q",length(region_id)),uhmat,do_transpose = T))
+}
+
 
 read_si_ql <- function(chunk_evdf){
   library(RcppEigenH5)
@@ -24,6 +38,7 @@ read_si_ql <- function(chunk_evdf){
   retl <- list()
   retl[["LDinfo"]] <- read_df_h5(chunk_evdf,"LDinfo") %>% nest(-region_id)
   region_id <-  retl[["LDinfo"]][["region_id"]]
+  stopifnot(!is.unsorted(region_id))
   retl[["Dl"]] <- lapply(region_id,read_dvec,h5file=chunk_evdf,dataname="D")
   names(retl[["Dl"]]) <- region_id
   retl[["Ql"]] <- lapply(region_id,read_2d_mat_h5,h5file=chunk_evdf,dataname="Q")

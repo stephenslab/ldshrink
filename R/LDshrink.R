@@ -70,6 +70,10 @@ write_eigen_chunks <- function(genof = "", evdf = "", chunksize, dataname = "R",
     return(list(Ql = Ql, rdl = rdl, indl = indl))
 }
 
+
+
+
+
 read_eigen_chunks <- function(evdf, chunksize) {
     # library(RcppEigenH5)
     stopifnot(file.exists(evdf))

@@ -12,8 +12,10 @@ LD_break_file="fourier_ls-all.bed"
 
 LD_df=pd.read_csv(LD_break_file,delim_whitespace=True)
 LD_df['region_id']=LD_df.index+1
+ALL_REGIONS=list(LD_df['region_id'])
 def filter_chrom(df,chrom):
     return list(df[df['chr']=="chr"+str(chrom)]['region_id'])
+
 
 TEMPF="temp_data.gds"
 
@@ -26,17 +28,16 @@ BIAS=list(np.linspace(0,0.1,num=3))
 TOT_SIM=NREPS*len(PVE)*len(BIAS)
 FGENEID=range(1,TOT_SIM+1)
                 #        dynamic()
-kgf=expand(KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",chrom=range(1,23))
-sim_gf=expand(KG_dir+"ldsc_sim_16/sim_{fgeneid}.sumstats.gz",fgeneid=range(1,TOT_SIM))
-n_simf=expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=range(1,TOT_SIM))
+#kgf=expand(KG_dir+"eur_w_ld_chr/{chrom}.l2.ldscore.gz",chrom=range(1,23))
+#sim_gf=expand(KG_dir+"ldsc_sim_{chrom}16/sim_{fgeneid}.sumstats.gz",fgeneid=range(1,TOT_SIM))
+#n_simf=expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=range(1,TOT_SIM))
 
         # 
         # expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID)
         # legf=KG_dir+"gds/ALL_seq_hapmap.gds"
 rule all:
     input:
-        logf=expand(KG_dir+"{method}_est_{gwas}_{chrom}/sim_results.tsv",
-                    chrom="16",method=["RSSp"],gwas=["gwas"])
+        quhf=KG_dir+"RSSp_genome_gwas_quh_chunk/1689_sim.h5"
 
 
         
@@ -66,13 +67,25 @@ rule subset_gds:
 
     
 
-rule merge_LD_region:
+# rule merge_LD_region:
+#     input:
+#         evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
+#     output:
+#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+#     script:
+#         "concat_h5.R"
+
+rule merge_quh_region:
     input:
-        evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
+        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all.RDS",
+        evdf=expand(KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)
+    params:
+        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
     output:
-        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all_quh.RDS"
     script:
-        "concat_h5.R"
+        "concat_quh.R"        
+        
 rule ldsc_chunk:
     input:
         gdsf=rules.subset_gds.output.gdsf
@@ -85,19 +98,45 @@ rule ldsc_chunk:
     script:
         "ldsc_chunk.R"
 
-rule RSSp_chrom:
+# rule RSSp_chrom:
+#     input:
+#         gdsf=rules.subset_gds.output.geno_gdsf,
+#         sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+#         tstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+#     params:
+#         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
+#     output:
+#         logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.tsv"
+#     script:
+#         "RSSP_chunk.R"
+
+rule chunk_RSSp_chrom:
     input:
-        gdsf=rules.subset_gds.output.geno_gdsf,
-        sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-        tstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+        rdsf=KG_dir+"RSSp_sim_gwas_{chrom}/sim_all.RDS",
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
     params:
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
     output:
-        logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.tsv"
+        logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.RDS"
     script:
-        "RSSP_chunk.R"
+        "fast_RSSP_chunk.R"
 
+
+rule gen_quh_chunk:
+    input:
+        evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",
+        uhf=KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5"
+    params:
+        LDchunk="{LDchunk}"
+    output:
+        quhf=KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5"
+    script:
+        "gen_quh_chunk.R"
+
+
+    
+        
 rule ldsc_chrom_est:
     input:
         ldsc_f="ldsc/ldsc.py",
@@ -139,9 +178,42 @@ rule sim_ldsc_chrom:
         nreps=NREPS
     output:
         outf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-        soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
+        soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID),
+
     script:
         "sim_chrom_ldsc.R"
+
+rule sim_chrom_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf
+    params:
+        chrom="{chrom}",
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+        pve=PVE,
+        bias=BIAS,
+        nreps=NREPS
+    output:
+        rdsf=KG_dir+"RSSp_sim_gwas_{chrom}/sim_all.RDS"        
+    script:
+        "sim_chrom_RSSp.R"
+
+
+rule sim_genome_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf
+    params:
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS),
+        pve=PVE,
+        bias=BIAS,
+        nreps=NREPS
+    output:
+        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all.RDS",
+        LDchunkf=expand(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)
+    threads: 8
+    script:
+        "gen_sim_genome_RSSp.R"        
+
 
 
 rule sim_ldsc_chrom_direct:
@@ -156,38 +228,13 @@ rule sim_ldsc_chrom_direct:
         nreps=NREPS
     output:
         outf=expand(KG_dir+"ldsc_sim_direct_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-        soutf=expand(KG_dir+"ldsc_sim_direct_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
+        soutf=expand(KG_dir+"ldsc_sim_direct_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID),
+        rdsf=KG_dir+"RSSp_sim_direct_{chrom}/sim_all.RDS"
     script:
         "sim_chrom_ldsc_direct.R"
         
         
-# rule t_ld_chunks:
-#     input:
-#         gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
-#     output:
-#         temp_chunkf="{LDchunk}.txt"
-#     script:
-#         "list_ld_regions.R"
 
-# rule dl_panel_info:
-#     input:
-#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel",
-#                    keep_local=True)
-#     params:
-#         pop="EUR"
-#     output:
-#         outf="EUR.samples"
-#     shell:
-#         "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
-
-
-# rule vcf_filt_hap:
-#     input:
-#         vcff=KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
-#         panelf="EUR.samples"
-        
-#     output:
-#         KG_dir+"_filt/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
 rule impute_2_snpgds:
     input:
         hapf=KG_dir+"impute/ALL.chr{chr}.impute.hap",
@@ -229,34 +276,6 @@ rule vcf_2_gds_all:
     script:
         "vcf2seq_gds.R"        
 
-# rule snpgds_2_seqgds:
-#     input:
-#         temp_gds="snp_gds/ALL.chr{chr}.snp_gds"
-#     output:
-#         temp_seq="snp_gds/ALL.chr{chr}.seq_gds"
-#     script:
-#         "snp_2_seqgds.R"
-
-        
-# rule dl_vcf:
-#     input:
-#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
-#     output:
-#         KG_dir+"vcf/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
-
-#     run:
-#         shell("mv {input} {output}")
-
-# rule dl_vcf_tbi:
-#     input:
-#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi",keep_local=True)
-#     output:
-#         "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
-
-
-#     run:
-#         shell("mv {input} {output}")
-
 rule map_file_RDS:
     input:
         mapf=expand(KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
@@ -292,4 +311,61 @@ rule extract_cell_array:
         with h5py.File(output.filename,'w') as wf:
             for i in range(len(data)):
                 wf.create_dataset(params.groupname+'/'+str(i),data[i].shape,data=data[i])
+
+
+# rule t_ld_chunks:
+#     input:
+#         gdsf=KG_dir+"gds/ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"
+#     output:
+#         temp_chunkf="{LDchunk}.txt"
+#     script:
+#         "list_ld_regions.R"
+
+# rule dl_panel_info:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel",
+#                    keep_local=True)
+#     params:
+#         pop="EUR"
+#     output:
+#         outf="EUR.samples"
+#     shell:
+#         "cat {input} | grep -w '{params.pop}' | awk '{{print $1}}' > {output.outf}"
+
+
+# rule vcf_filt_hap:
+#     input:
+#         vcff=KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+#         panelf="EUR.samples"
+        
+#     output:
+#         KG_dir+"_filt/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+
                 
+# rule snpgds_2_seqgds:
+#     input:
+#         temp_gds="snp_gds/ALL.chr{chr}.snp_gds"
+#     output:
+#         temp_seq="snp_gds/ALL.chr{chr}.seq_gds"
+#     script:
+#         "snp_2_seqgds.R"
+
+        
+# rule dl_vcf:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",keep_local=True)
+#     output:
+#         KG_dir+"vcf/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+
+#     run:
+#         shell("mv {input} {output}")
+
+# rule dl_vcf_tbi:
+#     input:
+#         FTP.remote("ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi",keep_local=True)
+#     output:
+#         "vcfs/ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
+
+
+#     run:
+#         shell("mv {input} {output}")
