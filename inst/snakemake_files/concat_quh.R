@@ -5,10 +5,13 @@ library(progress)
 
 inf <- snakemake@input[["evdf"]]
 LDchunk <- as.character(snakemake@params[["LDchunk"]])
-iresl <- readRDS(snakemake@input[["rdsf"]])
+paramf <- as.character(snakemake@input[["phenof"]]
+#iresl <- readRDS(snakemake@input[["rdsf"]])
 outf <- snakemake@output[["rdsf"]]
 
 nchunks <- length(inf)
+iresl <- list()
+iresl[["tparam_df"]] <- read_df_h5(paramf,"SimulationInfo")
 iresl[["quh_mat"]] <- concat_mat_chunks(inf, LDchunk,
                                         rep("quh", length(LDchunk)))
 iresl[["D"]] <- unlist(map2(inf, LDchunk, read_dvec, dataname = "D"))

@@ -35,10 +35,10 @@ FGENEID=range(1,TOT_SIM+1)
         # 
         # expand(KG_dir+"ldsc_est_16/sim_{fgeneid}.tsv",fgeneid=FGENEID)
         # legf=KG_dir+"gds/ALL_seq_hapmap.gds"
+                # 
 rule all:
     input:
-        quhf=KG_dir+"RSSp_genome_gwas_quh_chunk/1689_sim.h5"
-
+        quhf=expand(KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)[0:5]
 
         
 
@@ -67,18 +67,19 @@ rule subset_gds:
 
     
 
-# rule merge_LD_region:
-#     input:
-#         evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
-#     output:
-#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
-#     script:
-#         "concat_h5.R"
+rule merge_LD_region:
+    input:
+        evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
+    output:
+        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+    script:
+        "concat_h5.R"
 
 rule merge_quh_region:
     input:
         rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all.RDS",
         evdf=expand(KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)
+        phenof=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
     params:
         LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
     output:
@@ -98,18 +99,7 @@ rule ldsc_chunk:
     script:
         "ldsc_chunk.R"
 
-# rule RSSp_chrom:
-#     input:
-#         gdsf=rules.subset_gds.output.geno_gdsf,
-#         sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-#         tstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
-#     params:
-#         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
-#     output:
-#         logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.tsv"
-#     script:
-#         "RSSP_chunk.R"
+
 
 rule chunk_RSSp_chrom:
     input:
@@ -148,7 +138,8 @@ rule ldsc_chrom_est:
     output:
         logf=KG_dir+"ldsc_est_{gwas}_{chrom}/sim_{fgeneid}.log"
     shell:
-        "module load python/2.7.13; source activate ~/python2_project/bin/activate; ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
+        "python2 ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
+                # "module load python/2.7.13; source activate ~/python2_project/bin/activate; ldsc/ldsc.py --h2 {input.sumstatf} --ref-ld-chr {params.ld_dir} --w-ld-chr {params.ld_dir} --out {params.out_pref}"
         
 rule ldsc_parse_est:
     input:
@@ -166,22 +157,7 @@ rule get_ldsc:
         "ldsc/ldsc.py"
     shell:
         "git clone https://github.com/bulik/ldsc.git"
-    
-rule sim_ldsc_chrom:
-    input:
-        gdsf=rules.subset_gds.output.geno_gdsf
-    params:
-        chrom="{chrom}",
-        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
-        pve=PVE,
-        bias=BIAS,
-        nreps=NREPS
-    output:
-        outf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
-        soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID),
 
-    script:
-        "sim_chrom_ldsc.R"
 
 rule sim_chrom_RSSp:
     input:
@@ -196,25 +172,71 @@ rule sim_chrom_RSSp:
         rdsf=KG_dir+"RSSp_sim_gwas_{chrom}/sim_all.RDS"        
     script:
         "sim_chrom_RSSp.R"
-
-
-rule sim_genome_RSSp:
+        
+    
+rule parse_ldsc_chrom:
     input:
-        gdsf=rules.subset_gds.output.geno_gdsf
+        gdsf=rules.subset_gds.output.geno_gdsf,
+        rdsf=rules.sim_chrom_RSSp.output.rdsf
     params:
+        chrom="{chrom}",
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
-        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS),
         pve=PVE,
         bias=BIAS,
         nreps=NREPS
     output:
-        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all.RDS",
-        LDchunkf=expand(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)
-    threads: 8
+        outf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+        soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
+
     script:
-        "gen_sim_genome_RSSp.R"        
+        "sim_chrom_ldsc.R"
 
 
+# rule sim_genome_RSSp:
+#     input:
+#         gdsf=rules.subset_gds.output.geno_gdsf
+#     params:
+#         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+#         LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS),
+#         pve=PVE,
+#         bias=BIAS,
+#         nreps=NREPS
+#     output:
+#         rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all.RDS",
+#         LDchunkf=expand(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS)
+#     threads: 2
+#     script:
+#         "gen_sim_genome_RSSp.R"
+
+
+
+
+rule sim_pheno_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf
+    params:
+        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
+        pve=PVE,
+        bias=BIAS,
+        nreps=NREPS
+    output:
+        h5f=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
+    threads: 1
+    script:
+        "gen_ty_block_RSSp.R"
+
+
+rule map_uh_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf,
+        ymatf=rules.sim_pheno_RSSp.output.h5f
+    params:
+        LDchunk="{LDchunk}"
+    output:
+        LDchunkf=KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5"
+    threads: 1
+    script:
+        "map_uh_LDchunk_RSSp.R"        
 
 rule sim_ldsc_chrom_direct:
     input:
@@ -222,7 +244,6 @@ rule sim_ldsc_chrom_direct:
         gdsf=rules.subset_gds.output.geno_gdsf
     params:
         chrom="{chrom}",
-        fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
         pve=PVE,
         bias=BIAS,
         nreps=NREPS
@@ -263,9 +284,7 @@ rule vcf_2_impute:
         legf=KG_dir+"impute/ALL.chr{chr}.impute.legend"
     shell:
         "vcftools --gzvcf {input.vcff} --IMPUTE --out {params.out_pref} --keep {input.filt_f} --min-alleles 2 --max-alleles 2 --maf 0.05"
-
-        
-     
+             
     
 rule vcf_2_gds_all:
     input:
@@ -288,7 +307,7 @@ rule ld_chunk_1kg:
     input:
         gdsf=rules.subset_gds.output.gdsf
     output:
-        evdf=temp(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5")
+        evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5"
     params:
         region_id="{LDchunk}"
     script:
@@ -312,6 +331,21 @@ rule extract_cell_array:
             for i in range(len(data)):
                 wf.create_dataset(params.groupname+'/'+str(i),data[i].shape,data=data[i])
 
+
+
+
+# rule RSSp_chrom:
+#     input:
+#         gdsf=rules.subset_gds.output.geno_gdsf,
+#         sumstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+#         tstatf=expand(KG_dir+"ldsc_sim_{{gwas}}_{{chrom}}/sim_{fgeneid}.sumstats.gz",fgeneid=FGENEID),
+#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+#     params:
+#         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
+#     output:
+#         logf=KG_dir+"RSSp_est_{gwas}_{chrom}/sim_results.tsv"
+#     script:
+#         "RSSP_chunk.R"                
 
 # rule t_ld_chunks:
 #     input:

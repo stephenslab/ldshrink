@@ -6,9 +6,7 @@ library(RSSp)
 gdsf <- snakemake@input[["gdsf"]]
 chrom <- as.character(snakemake@params[["chrom"]])
 mfgeneid <- as.character(snakemake@params[["fgeneid"]])
-pve <- as.numeric(snakemake@params[["pve"]])
-bias <- as.numeric(snakemake@params[["bias"]])
-nreps <- as.integer(as.numeric(snakemake@params[["nreps"]]))
+res_l <- readRDS(snakemake@input[["rdsf"]])
 outf <- snakemake@output[["outf"]]
 soutf <- snakemake@output[["soutf"]]
 rdsf <- snakemake@output[["rdsf"]]
@@ -17,23 +15,16 @@ rdsf <- snakemake@output[["rdsf"]]
 
 gds <- seqOpen(gdsf, readonly = T)
 seqSetFilterChrom(gds, chrom)
+# save.image()
+# stop()
+res_l[["ldsc_df_l"]] <- read_SNPinfo_ldsc_gwas(gds,res_l$bias_uh_mat,N=res_l$n)
 n <- length(seqGetData(gds, "sample.id"))
 p <- length(seqGetData(gds, "variant.id"))
-cat("N: ", n, "\n")
-cat("PVE: ", pve, "\n")
-cat("bias: ", bias, "\n")
-tparam_df <- gen_tparamdf_norm(pve, bias, nreps, n, p) %>%
-    filter(fgeneid %in% mfgeneid)
-mpve <- tparam_df$tpve
-mbias <- tparam_df$tbias
 
+# res_l <- gen_sim_gds_ldsc(gds, pve = pve, bias = bias,
+#                           nreps = nreps, fgeneid = c(mfgeneid))
 
-save.image()
-
-res_l <- gen_sim_gds_ldsc(gds, pve = pve, bias = bias,
-                          nreps = nreps, fgeneid = c(mfgeneid))
-
-saveRDS(res_l,rdsf)
+# saveRDS(res_l,rdsf)
 stopifnot(all(sort(names(res_l$ldsc_df_l))==sort(mfgeneid)))
 
 # 
