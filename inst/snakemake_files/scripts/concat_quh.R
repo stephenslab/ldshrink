@@ -5,8 +5,7 @@ library(progress)
 
 inf <- snakemake@input[["evdf"]]
 LDchunk <- as.character(snakemake@params[["LDchunk"]])
-paramf <- as.character(snakemake@input[["phenof"]]
-#iresl <- readRDS(snakemake@input[["rdsf"]])
+paramf <- as.character(snakemake@input[["phenof"]])
 outf <- snakemake@output[["rdsf"]]
 
 nchunks <- length(inf)

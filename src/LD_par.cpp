@@ -1,7 +1,7 @@
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
-#include <mkl.h>
+//#include <mkl.h>
 // [[Rcpp::depends(RcppEigen)]]
 
 typedef std::tuple<float,float ,float,float> ldp;

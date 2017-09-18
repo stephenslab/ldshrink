@@ -10,6 +10,6 @@ License: GPL (>= 3)
 Imports: Rcpp (>= 0.12.10), RcppEigen (>= 0.3.2.9.1),dplyr,progress,BBmisc,
     SNPRelate,
 LinkingTo: Rcpp, RcppEigen
-Remotes: CreRecombinase/RcppEigenH5,zhengxwen/SeqArray
+Remotes: CreRecombinase/RcppEigenH5 (>= 0.2.0), CreRecombinase/RcppEigenH5 (>= 0.9.0),zhengxwen/SeqArray
 Suggests: testthat, knitr,rmarkdown
 VignetteBuilder: knitr
