@@ -3,10 +3,10 @@ import pandas as pd
 
 import os
 gardner_dir="../../../../../../../../group/xhe-lab/1KG/"
-if os.direxists(gardner_dir):
-    configpath="../workflow_params_gardner.json"
+if os.path.exists(gardner_dir):
+    configpath="workflow_params_gardner.json"
 else:
-    configpath="../workflow_params.json"
+    configpath="workflow_params.json"
 
 configfile:
     configpath    
