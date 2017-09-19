@@ -1,9 +1,15 @@
 include: "parameter_generation/Snakefile"
 import pandas as pd
 
+import os
+gardner_dir="../../../../../../../../group/xhe-lab/1KG/"
+if os.direxists(gardner_dir):
+    configpath="../workflow_params_gardner.json"
+else:
+    configpath="../workflow_params.json"
+
 configfile:
-    "workflow_params.json"
-    
+    configpath    
 #Directory that will serve as base directory for this project (good idea to use scratch storage)
 KG_dir=config["KG_DIRECTORY"]
 

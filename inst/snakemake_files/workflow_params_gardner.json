@@ -1,0 +1,11 @@
+{
+    "KG_DIRECTORY": "../../../../../../../../group/xhe-lab/1KG/
+/",
+    "VCF_DIR": "../../../../../../../../group/xhe-lab/1KG/
+/vcf/",
+    "GDS_DIR": "../../../../../../../../group/xhe-lab/1KG/
+/gds/",
+    "KG_MAPDIR" :"../../../../../../../../group/xhe-lab/1KG/
+/1000-genomes-genetic-maps/",
+    "LDETECT_BREAK_FILE": "fourier_ls-all.bed"
+}
