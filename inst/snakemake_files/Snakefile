@@ -3,11 +3,24 @@ import pandas as pd
 
 configfile:
     "workflow_params.json"
-
+    
+#Directory that will serve as base directory for this project (good idea to use scratch storage)
 KG_dir=config["KG_DIRECTORY"]
 
-#LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
+#Directory that holds "raw" 1000 genomes vcf files (I think this already exists in the `compbio` folder in the `RSS` folder)
+VCF_DIR=config["VCF_DIR"]
+
+#Directory that holds the haplotype and genotype `.gds` which are population specific (i.e EUR), and have had an allele frequency cutoff applied (i.e 0.05)
+GDS_DIR=config["GDS_DIR"]
+
+#Directory that holds the 1000 genomes genetic map files (you can get these off github, google 1000 genomes genetic maps)
+KG_MAPDIR=config["KG_MAPDIR"]
+
+
+# File that has the LDetect LD breakpoints
+#URL for that file is here #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
 LD_break_file=config["LDETECT_BREAK_FILE"]
+
 
 LD_df=pd.read_csv(LD_break_file,delim_whitespace=True)
 LD_df['region_id']=LD_df.index+1
@@ -18,9 +31,14 @@ def filter_chrom(df,chrom):
 
 
 
+
+#To generate different files, change the value of the variable `simulation_file`
+#(the fact that the variable is  called `simulation_file` doesn't have any significance)
 rule all:
     input:
+        simulation_file=KG_dir+"sim_gwas_summary_stats/simulation.txt.gz"
 
+        
 wildcard_constraints:
     chrom="\d+"
 
@@ -33,8 +51,8 @@ rule subset_gds:
         geno_gdsf=expand(KG_dir+"gds/ALL.chr{chr}_geno.gds",chr=range(1,23)),
         breakf=LD_break_file
     output:
-        gdsf=KG_dir+"gds/ALL_seq_hapmap.gds",
-        geno_gdsf=KG_dir+"gds/ALL_seq_hapmap_geno.gds"
+        gdsf=GDS_DIR+"ALL_seq_hapmap.gds",
+        geno_gdsf=GDS_DIR+"ALL_seq_hapmap_geno.gds"
     threads: 1
     script:
         "scripts/gds_subset.R"        
@@ -176,7 +194,7 @@ rule parse_ldsc_chrom:
 rule sim_pheno_w_Beta_RSSp:
     input:
         gdsf=rules.subset_gds.output.geno_gdsf,
-        betamatf="betamat.RDS"
+        betama_dff="betamat.RDS"
     params:
         pve=PVE
     output:
@@ -262,7 +280,7 @@ rule impute_2_snpgds:
 
 rule vcf_2_impute:
     input:
-        vcff=KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+        vcff=VCF_DIR+"ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
         filt_f="EUR.samples"
     params:
         out_pref=KG_dir+"impute/ALL.chr{chr}"
@@ -275,7 +293,7 @@ rule vcf_2_impute:
     
 rule vcf_2_gds_all:
     input:
-        vcff=expand(KG_dir+"vcf/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
+        vcff=expand(VCF_DIR+"ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",chr=range(1,23))
     output:
         temp_gds=temp("ALL.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes_seq_hapmap.gds"),
     threads: 10
@@ -284,7 +302,7 @@ rule vcf_2_gds_all:
 
 rule map_file_RDS:
     input:
-        mapf=expand(KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
+        mapf=expand(KG_MAPDIR+"interpolated_from_hapmap/chr{chr}.interpolated_genetic_map.gz",chr=range(1,23))
     output:
         mapf=KG_dir+"1000-genomes-genetic-maps/interpolated_hapmap.RDS"
     script:

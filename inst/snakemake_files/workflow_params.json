@@ -1,4 +1,7 @@
 {
     "KG_DIRECTORY": "../../../../../../../media/nwknoblauch/Data/1kg/",
+    "VCF_DIR": "../../../../../../../media/nwknoblauch/Data/1kg/vcf/",
+    "GDS_DIR": "../../../../../../../media/nwknoblauch/Data/1kg/gds/",
+    "KG_MAPDIR" :"../../../../../../../media/nwknoblauch/Data/1kg/1000-genomes-genetic-maps/",
     "LDETECT_BREAK_FILE": "fourier_ls-all.bed"
 }

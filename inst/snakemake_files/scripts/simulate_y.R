@@ -6,16 +6,22 @@ library(SeqArray)
 library(RSSp)
 
 gdsf <- snakemake@input[["gdsf"]]
-betamat <- readRDS(snakemake@input[["betamatf"]])
+beta_df <- readRDS(snakemake@input[["beta_dff"]])
+
 pve <- as.numeric(snakemake@params[["pve"]])
 tgdsf <- tempfile()
-file.copy(gdsf,tgdsf)
-if(ncol(betamat)!=length(pve))
+file.copy(gdsf, tgdsf)
+if(ncol(betamat) != length(pve))
     stopifnot(length(pve)==1)
 
 out_h5f <- snakemake@output[["h5f"]]
 gds <- seqOpen(tgdsf, readonly = F)
 
+subset_gds(gds,beta_df)
+index_cols <- colnames(beta_df)
+index_cols <- index_cols[! index_cols %in% c("fgeneid","beta")]
+
+betamat <- spread(key = fgeneid,value = beta) %>% select(-one_of(index_cols)) %>% data.matrix
 n <- length(seqGetData(gds, "sample.id"))
 p <- length(seqGetData(gds, "variant.id"))
 stopifnot(p == nrow(betamat))

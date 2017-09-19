@@ -45,6 +45,7 @@ test_that("LD shrinkage estimators work as expected on simulated data",{
   # Rmsig[lower.tri(Rmsig)] <- 0
   Rsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
   
+  which(abs((Rsig-Rmsig))==max(abs(Rsig-Rmsig)),arr.ind = T)
   
   # Rsig[lower.tri(Rsig)] <- 0
   expect_equal(Rsig,Rmsig)
@@ -80,7 +81,7 @@ test_that("LD shrinkage estimators results are approximately equal betweeen hapl
   RGsig <- calcLD(hmata = Gpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
   
   # Rsig[lower.tri(Rsig)] <- 0
-  expect_equal(RGsig,RHsig,tolerance=1e-3)
+  expect_equal(RGsig,RHsig,tolerance=1e-2)
 })
 
 
@@ -103,10 +104,13 @@ test_that("LD shrinkage estimators work the same real data ",{
   .CallOctave('cd',mdir)
   msig <- .CallOctave('shrink_cov',m,Ne,tmap,Hpanel,cutoff)
   Rmsig <- cov2cor(msig)
-  # Rmsig[lower.tri(Rmsig)] <- 0
   Rsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
-  # Rsig[lower.tri(Rsig)] <- 0
-  expect_equal(Rsig,Rmsig)
+  evdRsig <- eigen(Rsig)
+  evdmsig <- eigen(Rmsig)
+  min(evdmsig$values)
+  min(evdRsig$values)
+  which(abs(Rsig-Rmsig)==max(abs(Rsig-Rmsig)),arr.ind = T)
+    expect_equal(Rsig,Rmsig)
 })
 
 

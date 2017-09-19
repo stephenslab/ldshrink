@@ -19,3 +19,5 @@ test_that("matching SNPs to regions works with one chromosome",{
   snp_ct <- group_by(test_map,range_id) %>% summarise(n_snps=n()) %>% inner_join(distinct(test_map,range_id,num_snps))
   expect_equal(snp_ct$num_snps,snp_ct$n_snps)  
 })
+
+

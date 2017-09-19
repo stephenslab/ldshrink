@@ -1,5 +1,5 @@
 read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
-
+  library(SeqArray)
     tdf <- tibble::data_frame(SNP=seqGetData(gds,var.name="annotation/id"),
                               snp_id=seqGetData(gds,var.name="variant.id"),
                               chr=seqGetData(gds,var.name="chromosome"),
@@ -13,6 +13,14 @@ read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
     return(tdf)
 }
 
+
+subset_gds <- function(gds,info_df){
+  library(dplyr)
+  si_df <- inner_join(info_df, read_SNPinfo_gds(gds)) %>% 
+    distinct(snp_id, .keep_all = T) %>% arrange(snp_id)
+  seqSetFilter(gds,variant.sel = si_df$snp_id)
+    
+}
 
 mult_eigen_chunks <- function(chunk_evdf,uhmat){
   library(RcppEigenH5)
