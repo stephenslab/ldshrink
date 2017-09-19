@@ -126,12 +126,12 @@ rule sim_Beta_RSSp:
         
 
 rule sim_pheno_w_Beta_resid_RSSp:
-        ''' This rule works very similarly to sim_pheno_w_Beta_RSSp, but takes 
-        an extra input, a nxg (where n is the sample size and g is the number 
-        of traits to be simulated) matrix stored in a RDS file that represents
-        the residuals.  Use this rule if you don't want to use the built in method
-        for computing PVE
-        '''
+    ''' This rule works very similarly to sim_pheno_w_Beta_RSSp, but takes 
+    an extra input, a nxg (where n is the sample size and g is the number 
+    of traits to be simulated) matrix stored in a RDS file that represents
+    the residuals.  Use this rule if you don't want to use the built in method
+    for computing PVE
+    '''
     input:
         gdsf=rules.subset_gds.output.geno_gdsf,
         beta_dff="betadf.RDS",
