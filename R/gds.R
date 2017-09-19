@@ -1,4 +1,4 @@
-read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
+read_SNPinfo_gds <- function(gds,alleles=F,MAF=F,region_id=F){
   library(SeqArray)
     tdf <- tibble::data_frame(SNP=seqGetData(gds,var.name="annotation/id"),
                               snp_id=seqGetData(gds,var.name="variant.id"),
@@ -10,15 +10,19 @@ read_SNPinfo_gds <- function(gds,alleles=F,MAF=F){
     if(MAF){
       tdf <- mutate(tdf,MAF=seqAlleleFreq(gds))
     }
+    if(region_id){
+      tdf <- mutate(tdf,region_id=seqGetData(gds,"annotation/info/LD_chunk"))
+    }
     return(tdf)
 }
 
 
-subset_gds <- function(gds,info_df){
+subset_gds <- function(gds,info_df,region_id=F){
   library(dplyr)
-  si_df <- inner_join(info_df, read_SNPinfo_gds(gds)) %>% 
+  si_df <- inner_join(info_df, read_SNPinfo_gds(gds,region_id=region_id)) %>% 
     distinct(snp_id, .keep_all = T) %>% arrange(snp_id)
   seqSetFilter(gds,variant.sel = si_df$snp_id)
+  return(si_df)
     
 }
 
