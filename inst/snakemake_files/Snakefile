@@ -194,14 +194,46 @@ rule parse_ldsc_chrom:
 rule sim_pheno_w_Beta_RSSp:
     input:
         gdsf=rules.subset_gds.output.geno_gdsf,
-        betama_dff="betamat.RDS"
+        beta_dff="betadf.RDS"
     params:
         pve=PVE
     output:
         h5f=KG_dir+"RSSp_sim_gwas_pheno/simulate_y.h5"
-    threads: 1
     script:
         "scripts/simulate_y.R"
+
+
+rule gen_snpinfo:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf
+    output:
+        snpif="snpinfo.RDS"
+    script:
+        "scripts/gen_snpinfo.R"
+
+rule sim_Beta_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf,
+        snp_infof="snpinfo.RDS"
+    params:
+        pve=PVE
+    output:
+        beta_dff="betadf.RDS"
+    script:
+        "scripts/simulate_beta.R"        
+        
+
+rule sim_pheno_w_Beta_resid_RSSp:
+    input:
+        gdsf=rules.subset_gds.output.geno_gdsf,
+        beta_dff="betadf.RDS",
+        resid_f="residmat.RDS"
+    params:
+        pve=PVE
+    output:
+        h5f=KG_dir+"RSSp_sim_gwas_pheno/simulate_y_residuals.h5"
+    script:
+        "scripts/simulate_y_residuals.R"        
     
 
 
