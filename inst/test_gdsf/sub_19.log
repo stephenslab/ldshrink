@@ -1,0 +1,21 @@
+
+VCFtools - UNKNOWN
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--gzvcf /media/nwknoblauch/Data/1kg/vcf/ALL.chr19.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
+	--keep ../snakemake_files/EUR.samples
+	--max-alleles 2
+	--min-alleles 2
+	--max-missing 1
+	--IMPUTE
+	--out sub_19
+	--phased
+	--snps sub_snpid.txt
+
+Using zlib version: 1.2.8
+Keeping individuals in 'keep' list
+After filtering, kept 503 out of 2504 Individuals
+Outputting in IMPUTE format (bi-allelic, completely phased SNPs only)
+After filtering, kept 199 out of a possible 1832506 Sites
+Run Time = 75.00 seconds

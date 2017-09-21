@@ -1,7 +1,0 @@
-import numpy as np
-NREPS =4
-PVE=list(np.linspace(0.01,0.9,num=9))
-BIAS=list(np.linspace(0,0.1,num=3))
-TOT_SIM=NREPS*len(PVE)*len(BIAS)
-FGENEID=range(1,TOT_SIM+1)
-
