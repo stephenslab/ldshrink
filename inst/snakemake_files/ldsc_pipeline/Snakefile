@@ -32,9 +32,9 @@ LD_break_file="../"+config["LDETECT_BREAK_FILE"]
 
 rule all:
     input:
-       "../quh_scz.txt.gz"
-
-
+        "../scz_RSSp_res.txt",
+        "../scz_LD_regions.txt"
+       
 
 rule gwas_subset:
     input:
@@ -63,7 +63,36 @@ rule merge_quh_subset:
         quhf=dynamic("../quh_scz/{LDchunk}_quh.txt")
     output:
         quhf="../quh_scz.txt.gz"
+        
     script:
         "../ldsc_scripts/merge_quh.R"
+
+rule RSSp_est_quh:
+    input:
+        quhf="../quh_{trait}.txt.gz"
+    params:
+        traitn="{trait}"
+    output:
+        RSSp_resf="../{trait}_RSSp_res.txt"
+    script:
+        "../ldsc_scripts/RSSp_quh.R"
     
         
+rule trait_subset_gds:
+    input:
+        haplo_gdsf=GDS_DIR+"ALL_seq_hapmap.gds",
+        geno_gdsf=GDS_DIR+"ALL_seq_hapmap_geno.gds",
+        traitf="quh_{trait}.txt.gz"
+    output:
+        haplo_gdsf=GDS_DIR+"{trait}_seq_hapmap.gds",
+        geno_gdsf=GDS_DIR+"{trait}_seq_hapmap_geno.gds"
+    script:
+        "../scripts/trait_subset.R"
+
+rule trait_LD_regions:
+    input:
+        gdsf=GDS_DIR+"{trait}_seq_hapmap.gds"
+    output:
+        unique_f="../{trait}_LD_regions.txt"
+    script:
+        "../scripts/LD_regions.R"

@@ -22,7 +22,7 @@ input_df <- read_delim(inputf,delim="\t")
 
 
 
-output_df <- inner_join(input_df,subset_gds(gds,input_df,region_id=T))
+output_df <- inner_join(input_df,subset_gds(gds,input_df,region_id=T))%>% select(snp_id,Z,N,region_id)
 
 p <- calc_p(gds)
 
@@ -32,7 +32,7 @@ write_delim(output_df,outf,delim="\t",col_names=T)
 
 outl <- split(output_df,output_df$region_id)
 
-imap(outl,function(df,name,dirname){
+iwalk(outl,function(df,name,dirname){
     write_delim(df,file.path(dirname,paste0(name,"_ldsc_sub.txt")),delim="\t")
     },dirname=out_dir)
 

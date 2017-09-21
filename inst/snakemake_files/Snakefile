@@ -29,24 +29,31 @@ KG_MAPDIR=config["KG_MAPDIR"]
 
 # File that has the LDetect LD breakpoints
 #URL for that file is here #LD_break_file_url="https://bitbucket.org/nygcresearch/ldetect-data/raw/ac125e47bf7ff3e90be31f278a7b6a61daaba0dc/EUR/fourier_ls-all.bed"
+
+
+subworkflow gwas_subset_ldsc:
+    workdir: "ldsc_pipeline"
+
+           
 LD_break_file=config["LDETECT_BREAK_FILE"]
-
-
 LD_df=pd.read_csv(LD_break_file,delim_whitespace=True)
 LD_df['region_id']=LD_df.index+1
-ALL_REGIONS=[x for x in list(LD_df['region_id']) if x != 1187]
+
+
+with open("scz_LD_regions.txt") as f:
+    ALL_REGIONS=f.read().splitlines()
+#ALL_REGIONS=[x for x in list(LD_df['region_id']) if x != 1187]
+
 def filter_chrom(df,chrom):
     return list(df[df['chr']=="chr"+str(chrom)]['region_id'])
-
-
-
 
 
 #To generate different files, change the value of the variable `simulation_file`
 #(the fact that the variable is  called `simulation_file` doesn't have any significance)
 rule all:
     input:
-    
+        "sim_scz_RSSp_res.txt.gz",
+        KG_dir+"RSSp_sim_gwas_genome/scz_sim_all_quh.RDS"
 
         
 wildcard_constraints:
@@ -68,7 +75,9 @@ rule subset_gds:
     script:
         "scripts/gds_subset.R"        
 
-    
+
+        
+
 
 
 ### Rules for simulating GWAS data
@@ -151,14 +160,14 @@ rule sim_pheno_RSSp:
     comparisons
         '''
     input:
-        gdsf=rules.subset_gds.output.geno_gdsf
+        gdsf=GDS_DIR+"{trait}_seq_hapmap_geno.gds"
     params:
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID),
         pve=PVE,
         bias=BIAS,
         nreps=NREPS
     output:
-        h5f=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
+        h5f=KG_dir+"RSSp_sim_gwas_pheno/{trait}_trait.h5"
     threads: 1
     script:
         "scripts/gen_ty_block_RSSp.R"
@@ -183,35 +192,13 @@ rule map_betahat_se:
 
 
 
-rule merge_LD_region:
-    input:
-        evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
-    output:
-        evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
-    script:
-        "scripts/concat_h5.R"
-
-rule merge_quh_region:
-    input:
-        evdf=expand(KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS),
-        phenof=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
-    params:
-        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
-    output:
-        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all_quh.RDS"
-    script:
-        "scripts/concat_quh.R"
-
-rule merge_uh_region:
-    input:
-        evdf=expand(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS),
-        phenof=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
-    params:
-        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
-    output:
-        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all_uh.RDS"
-    script:
-        "scripts/concat_uh.R"                
+# rule merge_LD_region:
+#     input:
+#         evdf=lambda wildcards: expand(KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",LDchunk=filter_chrom(LD_df,wildcards.chrom))
+#     output:
+#         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5"
+#     script:
+#         "scripts/concat_h5.R"
         
 rule ldsc_chunk:
     input:
@@ -242,15 +229,61 @@ rule chunk_RSSp_chrom:
 rule gen_quh_chunk:
     input:
         evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5",
-        uhf=KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5"
+        uhf=KG_dir+"RSSp_genome_gwas_uh_chunk/{trait}_{LDchunk}_sim.h5"
     params:
         LDchunk="{LDchunk}"
     output:
-        quhf=temp(KG_dir+"RSSp_genome_gwas_quh_chunk/{LDchunk}_sim.h5")
+        quhf=KG_dir+"RSSp_genome_gwas_quh_chunk/{trait}_{LDchunk}_sim.h5"
     script:
         "scripts/gen_quh_chunk.R"
-    
+                  
+   
         
+rule map_uh_RSSp:
+    input:
+        gdsf=rules.sim_pheno_RSSp.input.gdsf,
+        ymatf=rules.sim_pheno_RSSp.output.h5f
+    params:
+        LDchunk="{LDchunk}"
+    output:
+        LDchunkf=KG_dir+"RSSp_genome_gwas_uh_chunk/{trait}_{LDchunk}_sim.h5"
+    threads: 1
+    script:
+        "scripts/map_uh_LDchunk_RSSp.R"        
+
+rule merge_quh_region:
+    input:
+        evdf=expand(KG_dir+"RSSp_genome_gwas_quh_chunk/{{trait}}_{LDchunk}_sim.h5",LDchunk=ALL_REGIONS),
+        phenof=rules.sim_pheno_RSSp.output.h5f
+    params:
+        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
+    output:
+        rdsf=KG_dir+"RSSp_sim_gwas_genome/{trait}_sim_all_quh.RDS"
+    script:
+        "scripts/concat_quh.R"
+
+rule RSSp_sim_mat_est:
+    input:
+        rdsf=rules.merge_quh_region.output.rdsf
+    output:
+        dff="sim_{trait}_RSSp_res.txt.gz"
+    script:
+        "scripts/mat_RSSp_sim_mat_est.R"
+        
+
+rule merge_uh_region:
+    input:
+        evdf=expand(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5",LDchunk=ALL_REGIONS),
+        phenof=KG_dir+"RSSp_sim_gwas_pheno/trait.h5"
+    params:
+        LDchunk=expand("{LDchunk}",LDchunk=ALL_REGIONS)
+    output:
+        rdsf=KG_dir+"RSSp_sim_gwas_genome/sim_all_uh.RDS"
+    script:
+        "scripts/concat_uh.R"                
+
+
+
 rule ldsc_chrom_est:
     input:
         ldsc_f="ldsc/ldsc.py",
@@ -275,7 +308,8 @@ rule ldsc_parse_est:
         fgeneid=expand("{fgeneid}",fgeneid=FGENEID)
     script:
         "scripts/parse_ldsc.R"
-    
+
+
 rule get_ldsc:
     output:
         "ldsc/ldsc.py"
@@ -296,8 +330,10 @@ rule sim_chrom_RSSp:
         rdsf=KG_dir+"RSSp_sim_gwas_{chrom}/sim_all.RDS"        
     script:
         "scripts/sim_chrom_RSSp.R"
+
+
         
-    
+
 rule parse_ldsc_chrom:
     input:
         gdsf=rules.subset_gds.output.geno_gdsf,
@@ -313,19 +349,14 @@ rule parse_ldsc_chrom:
         soutf=expand(KG_dir+"ldsc_sim_gwas_{{chrom}}/sim_{fgeneid}_tparam.tsv",fgeneid=FGENEID)
     script:
         "scripts/sim_chrom_ldsc.R"        
-        
-rule map_uh_RSSp:
-    input:
-        gdsf=rules.subset_gds.output.geno_gdsf,
-        ymatf=rules.sim_pheno_RSSp.output.h5f
-    params:
-        LDchunk="{LDchunk}"
-    output:
-        LDchunkf=temp(KG_dir+"RSSp_genome_gwas_uh_chunk/{LDchunk}_sim.h5")
-    threads: 1
-    script:
-        "scripts/map_uh_LDchunk_RSSp.R"        
 
+
+
+
+
+
+
+        
 rule sim_ldsc_chrom_direct:
     input:
         evd_chunkf=KG_dir+"EVD_CHROM_H5/1KG_hapmap_{chrom}.h5",

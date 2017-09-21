@@ -1,0 +1,37 @@
+import os
+gardner_dir="../../../../../../../../group/xhe-lab/1KG/"
+rcc_dir="../../../../../../project/xinhe/eQTL/1kg/"
+if os.path.exists(gardner_dir):
+    configpath="workflow_params_gardner.json"
+else:
+    if os.path.exists(rcc_dir):
+        configpath="workflow_params_rcc.json"
+    else:
+        configpath="workflow_params.json"
+
+configfile:
+    configpath  
+
+
+KG_dir=config["KG_DIRECTORY"]
+
+#Directory that holds "raw" 1000 genomes vcf files (I think this already exists in the `compbio` folder in the `RSS` folder)
+VCF_DIR=config["VCF_DIR"]
+
+#Directory that holds the haplotype and genotype `.gds` which are population specific (i.e EUR), and have had an allele frequency cutoff applied (i.e 0.05)
+GDS_DIR=config["GDS_DIR"]
+
+#Directory that holds the 1000 genomes genetic map files (you can get these off github, google 1000 genomes genetic maps)
+KG_MAPDIR=config["KG_MAPDIR"]
+    
+
+
+rule ld_chunk_1kg:
+    input:
+        gdsf=
+    output:
+        evdf=KG_dir+"EVD_H5/1KG_hapmap_{LDchunk}.h5"
+    params:
+        region_id="{LDchunk}"
+    script:
+        "scripts/evd_1kg.R"    

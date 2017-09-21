@@ -7,7 +7,7 @@ gwasf <- snakemake@input[["gwasf"]]
 evdf <- snakemake@params[["evdf"]]
 
 stopifnot(file.exists(evdf))
-gwas_df <- read_delim(gwasf,delim="\t") %>% mutate(chr=as.character(chr))
+gwas_df <- read_delim(gwasf,delim="\t")
 
 
 write_delim(
