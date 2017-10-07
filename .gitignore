@@ -5,6 +5,7 @@
 src/*.o
 src/*.so
 src/*.dll
+.dir-locals.el
 compile_commands.json
 inst/snakemake_files/*txt
 inst/snakemake_files/snakejob*
