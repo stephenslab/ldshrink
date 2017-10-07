@@ -1,6 +1,5 @@
 #' match_SNP
 #' Given a dataframe of ranges, match another dataframe of SNPs to that range
-#' @
 #' @param break_df A dataframe having the following columns:
 #' chr (character or integer)
 #' start (integer)
@@ -89,86 +88,6 @@ read_SNPinfo <- function(snpfile,chr_to_char=T, extra_cols = NULL, id_col=NULL){
   return(snp_df)
 }
 
-
-
-#' chunk_R_matfile
-#' Given a path to a HDF5 file with a sparse LD matrix and 
-#' a path to a bed file giving breakpoints, chunk the LD matrix (keeping track of where the chunks are)
-#' @param sparse_Rfile path to HDF5 file. Must have group "R",data "pos"(integer), and data "chr"(integer)
-#' @param break_df path to bed file. must have column chr, 
-chunk_R_evd_matfile <- function(match_df){
-  library(tidyr)
-  library(purrr)
-  sparse_Rfile <- unique(match_df$sparse_Rfile)
-  p <- unique(match_df$p)
-  
-  stopifnot(file.exists(sparse_Rfile),length(sparse_Rfile)==1,
-            length(p)==1,length(unique(match_df$chr))==1)
-  R <- read_ccs_h5(sparse_Rfile,groupname = "R",dims=c(p,p))
-  match_l <- split(match_df,match_df$range_id)
-  match_R <- map(match_l,function(x,sparse_Rfile,R){
-    pos_id <- as.integer(gsub("[^0-9]+","",x$snp_id))
-    stopifnot(all(!is.na(pos_id)))
-    nx <- nest(x,-range_id,-start,-stop,-chr,.key="snpinfo")
-    return(mutate(nx,R=list(R[pos_id,pos_id])))
-  },R = R) %>% bind_rows()
-  match_R <- rowwise(match_R) %>% mutate(evdR = list(eigen(R))) %>% ungroup()
-  Ql <- transpose(match_R$evdR)
-  match_R <- select(match_R,-evdR) %>% mutate(Q=Ql$vectors,d=Ql$values)
-  return(match_R)
-}
-
-
-
-brute_write_SVD <- function(svd_chunk,outfile){
-  library(dplyr)
-  library(RcppEigenH5)
-  library(purrr)
-    svd_chunk <- mutate(svd_chunk,
-                        chr=as.integer(gsub("chr","",chr)),
-                        range_id=as.integer(gsub("range: ","",range_id)))
-    chr <- unique(svd_chunk$chr)
-    stopifnot(length(chr)==1)
-    write_ivec_h5(h5file = outfile,groupname = "LDchunks",dataname="start",data = svd_chunk$start,deflate_level = 4)
-    write_ivec_h5(h5file = outfile,groupname = "LDchunks",dataname="stop",data = svd_chunk$stop,deflate_level = 4)
-    write_ivec_h5(h5file = outfile,groupname = "LDchunks",dataname="range_id",data = svd_chunk$range_id,deflate_level = 4)
-    write_data_string_attr_h5(h5filename = outfile,h5_groupname = "LDchunks",h5_dataname = "range_id",h5_attr_name = "prefix",h5_attr_value = "range: ")
-    write_group_int_attr_h5(h5filename = outfile,h5_groupname = "/",h5_attr_name = "chr",h5_attr_value = chr)
-    iwalk(svd_chunk$snpinfo,function(x,y,outfile,range_id){
-      snp_id <- as.integer(gsub("SNP: ","",x$snp_id))
-      pos <- x$pos
-      write_ivec_h5(h5file = outfile, groupname = range_id[y],dataname = "snp_id",data = snp_id,deflate_level = 4)
-      write_ivec_h5(h5file = outfile, groupname = range_id[y],dataname = "pos",data = pos,deflate_level = 4)
-    },outfile=outfile,range_id=svd_chunk$range_id)
-    iwalk(svd_chunk$Q,function(x,y,outfile,range_id){
-      write_mat_h5(h5file = outfile, groupname = range_id[y],dataname = "Q",data = x,deflate_level = 4)
-    },outfile=outfile,range_id=svd_chunk$range_id)
-    iwalk(svd_chunk$d,function(x,y,outfile,range_id){
-      write_dvec_h5(h5file = outfile, groupname = range_id[y],dataname = "d",data = x,deflate_level = 4)
-    },outfile=outfile,range_id=svd_chunk$range_id)
-    return(T)
-}
-
-chunk_all_LD <- function(sparse_Rfiles,breakfiles,outfiles=NULL){
-  library(dplyr)
-  library(purrr)
-  if(is.null(outfiles)){
-    sparse_dir <- dirname(sparse_Rfiles)
-    sparse_files <- basename(sparse_Rfiles)
-    outfiles <- file.path(sparse_dir,paste0("EVD_",sparse_files))
-  }
-  stopifnot(length(outfiles) == length(sparse_Rfiles))
-  break_df <- map_df(breakfiles,readr::read_delim,delim = "\t", trim_ws = T) %>% mutate(range_id=paste0("range: ", 1:n()))
-  snp_df <- map_df(sparse_Rfiles,function(x){read_SNPinfo(x) %>% mutate(sparse_Rfile=x)})
-  match_df <- match_SNP(break_df,snp_df)
-  
-  match_df_l <- split(match_df,match_df$chr)
-  names(outfiles) <- gsub(".+_1kg_([0-9]+).mat","chr\\1",outfiles)
-  iwalk(match_df_l,function(x,y,outfiles){
-    cat(y," ",outfiles[y],"\n")
-    brute_write_SVD(chunk_R_evd_matfile(x),outfiles[y])
-  },outfiles=outfiles)
-}
 
 
 

@@ -94,61 +94,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calc_spve_naive
-double calc_spve_naive(const Matrix_external R, const arrayxd_external beta, const arrayxd_external beta_hat, const arrayxd_external se_hat, const int n);
-RcppExport SEXP _LDshrink_calc_spve_naive(SEXP RSEXP, SEXP betaSEXP, SEXP beta_hatSEXP, SEXP se_hatSEXP, SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Matrix_external >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const arrayxd_external >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< const arrayxd_external >::type beta_hat(beta_hatSEXP);
-    Rcpp::traits::input_parameter< const arrayxd_external >::type se_hat(se_hatSEXP);
-    Rcpp::traits::input_parameter< const int >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(calc_spve_naive(R, beta, beta_hat, se_hat, n));
-    return rcpp_result_gen;
-END_RCPP
-}
-// approx_diag
-Rcpp::NumericVector approx_diag(const Matrix_external R, const int blocksize);
-RcppExport SEXP _LDshrink_approx_diag(SEXP RSEXP, SEXP blocksizeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Matrix_external >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const int >::type blocksize(blocksizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(approx_diag(R, blocksize));
-    return rcpp_result_gen;
-END_RCPP
-}
-// calc_spve
-Eigen::ArrayXd calc_spve(const Eigen::MatrixXd& R, const Eigen::MatrixXd& beta_mat, const Eigen::MatrixXd& beta_hat_mat, const Eigen::MatrixXd& se_hat_mat, const int n);
-RcppExport SEXP _LDshrink_calc_spve(SEXP RSEXP, SEXP beta_matSEXP, SEXP beta_hat_matSEXP, SEXP se_hat_matSEXP, SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type beta_mat(beta_matSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type beta_hat_mat(beta_hat_matSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type se_hat_mat(se_hat_matSEXP);
-    Rcpp::traits::input_parameter< const int >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(calc_spve(R, beta_mat, beta_hat_mat, se_hat_mat, n));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sub_calc_spve
-Eigen::ArrayXd sub_calc_spve(const Eigen::MatrixXd& R, const Eigen::MatrixXd tbeta, const int n);
-RcppExport SEXP _LDshrink_sub_calc_spve(SEXP RSEXP, SEXP tbetaSEXP, SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type R(RSEXP);
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type tbeta(tbetaSEXP);
-    Rcpp::traits::input_parameter< const int >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(sub_calc_spve(R, tbeta, n));
-    return rcpp_result_gen;
-END_RCPP
-}
 // calc_nmsum
 double calc_nmsum(const double m);
 RcppExport SEXP _LDshrink_calc_nmsum(SEXP mSEXP) {
@@ -271,10 +216,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_calcLD_par", (DL_FUNC) &_LDshrink_calcLD_par, 4},
     {"_LDshrink_haplo_2_geno", (DL_FUNC) &_LDshrink_haplo_2_geno, 2},
     {"_LDshrink_haplo_2_geno_i", (DL_FUNC) &_LDshrink_haplo_2_geno_i, 2},
-    {"_LDshrink_calc_spve_naive", (DL_FUNC) &_LDshrink_calc_spve_naive, 5},
-    {"_LDshrink_approx_diag", (DL_FUNC) &_LDshrink_approx_diag, 2},
-    {"_LDshrink_calc_spve", (DL_FUNC) &_LDshrink_calc_spve, 5},
-    {"_LDshrink_sub_calc_spve", (DL_FUNC) &_LDshrink_sub_calc_spve, 3},
     {"_LDshrink_calc_nmsum", (DL_FUNC) &_LDshrink_calc_nmsum, 1},
     {"_LDshrink_calc_theta", (DL_FUNC) &_LDshrink_calc_theta, 1},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 3},

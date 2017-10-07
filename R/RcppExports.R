@@ -29,22 +29,6 @@ haplo_2_geno_i <- function(haplo, snps_in_rows = TRUE) {
     .Call('_LDshrink_haplo_2_geno_i', PACKAGE = 'LDshrink', haplo, snps_in_rows)
 }
 
-calc_spve_naive <- function(R, beta, beta_hat, se_hat, n) {
-    .Call('_LDshrink_calc_spve_naive', PACKAGE = 'LDshrink', R, beta, beta_hat, se_hat, n)
-}
-
-approx_diag <- function(R, blocksize) {
-    .Call('_LDshrink_approx_diag', PACKAGE = 'LDshrink', R, blocksize)
-}
-
-calc_spve <- function(R, beta_mat, beta_hat_mat, se_hat_mat, n) {
-    .Call('_LDshrink_calc_spve', PACKAGE = 'LDshrink', R, beta_mat, beta_hat_mat, se_hat_mat, n)
-}
-
-sub_calc_spve <- function(R, tbeta, n) {
-    .Call('_LDshrink_sub_calc_spve', PACKAGE = 'LDshrink', R, tbeta, n)
-}
-
 calc_nmsum <- function(m) {
     .Call('_LDshrink_calc_nmsum', PACKAGE = 'LDshrink', m)
 }

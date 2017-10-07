@@ -12,7 +12,7 @@ test_that("Getting from haplotype to genotype works as expected",{
   sample.id <- scan(test_sampf,what=character(),sep="\n")
   sample.id_haplo <- c(sapply(sample.id,function(x)c(paste0(x,"-1"),paste0(x,"-2"))))
   chrom <- "19"
-  leg_df <- read_delim(test_legf,delim=" ") %>%
+  leg_df <- readr::read_delim(test_legf,delim=" ") %>%
     mutate(allele=paste0(allele0,",",allele1),chrom=as.character(chrom)) %>%
     mutate(snp_id=1:n()) %>% rename(SNP=ID)
   map_df <- read_delim(test_mapf,delim=" ",col_names = c("SNP","pos","map")) %>% mutate(chrom="19")
