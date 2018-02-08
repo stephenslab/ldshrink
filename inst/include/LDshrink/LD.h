@@ -20,4 +20,6 @@
 // 
 // Eigen::SparseMatrix<double> sp_calcLD(c_Matrix_internal hmata,c_arrayxd_internal mapa,const double m, const double Ne, const double cutoff);
 //   
+void calcLD_pa(Eigen::MatrixXd &hmata,const std::vector<double> &mapa,Eigen::MatrixXd & S,const double m, const double Ne, const double cutoff);
+  
 #endif

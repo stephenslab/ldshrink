@@ -18,5 +18,14 @@
 #PKG_CFLAGS = $(CC_FLAGS)  $(R_INC) -pthread -I/usr/lib/openmpi/include -I/usr/lib/openmpi/include/openmpi -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent -I/usr/lib/openmpi/include/openmpi/opal/mca/event/libevent2021/libevent/include $(ALL_MATH_INC)
 #PKG_LIBS = -L/usr/local/lib/ $(EL_PATH) $(EL_LIBS) 
 
-CXX_STD = CXX11
-PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG 
+CXX_STD = CXX14
+RHDF5_LIBS=`echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")'|\
+    "${R_HOME}/bin/R" --vanilla --slave`
+BLOSC_CFLAGS+=$(shell echo 'libblosc::pkgconfig("PKG_CFLAGS")'|\
+"${R_HOME}/bin/R" --vanilla --slave)
+PKG_LIBS+=$(shell echo 'libblosc::pkgconfig("PKG_LIBS_static")' |\
+"${R_HOME}/bin/R" --vanilla --slave)   
+PKG_LIBS += $(RHDF5_LIBS)
+PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
+PKG_LIBS += -L/opt/intel/compilers_and_libraries_2018.0.128/linux/mkl/lib/intel64/ -ltbb -lmkl_rt
+PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DUSE_EIGEN -DUSE_BLOSC ${BLOSC_CFLAGS} -DH5_USE_EIGEN -I/opt/intel/compilers_and_libraries/linux/mkl/include/ -DUSE_MKL

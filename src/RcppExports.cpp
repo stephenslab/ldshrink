@@ -4,9 +4,62 @@
 #include "../inst/include/LDshrink.h"
 #include <RcppEigen.h>
 #include <Rcpp.h>
+#include <string>
+#include <set>
 
 using namespace Rcpp;
 
+// blosc
+int blosc();
+static SEXP _LDshrink_blosc_try() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    rcpp_result_gen = Rcpp::wrap(blosc());
+    return rcpp_result_gen;
+END_RCPP_RETURN_ERROR
+}
+RcppExport SEXP _LDshrink_blosc() {
+    SEXP rcpp_result_gen;
+    {
+        Rcpp::RNGScope rcpp_rngScope_gen;
+        rcpp_result_gen = PROTECT(_LDshrink_blosc_try());
+    }
+    Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
+    if (rcpp_isInterrupt_gen) {
+        UNPROTECT(1);
+        Rf_onintr();
+    }
+    Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
+    if (rcpp_isError_gen) {
+        SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
+        UNPROTECT(1);
+        Rf_error(CHAR(rcpp_msgSEXP_gen));
+    }
+    UNPROTECT(1);
+    return rcpp_result_gen;
+}
+// test_cumsum
+Rcpp::IntegerVector test_cumsum(Rcpp::IntegerVector ld_region);
+RcppExport SEXP _LDshrink_test_cumsum(SEXP ld_regionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type ld_region(ld_regionSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_cumsum(ld_region));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ld_chunks
+Rcpp::IntegerMatrix ld_chunks(Rcpp::IntegerVector ld_region);
+RcppExport SEXP _LDshrink_ld_chunks(SEXP ld_regionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type ld_region(ld_regionSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld_chunks(ld_region));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calc_cov_p_exp
 Eigen::MatrixXd calc_cov_p_exp(Matrix_external mata, Matrix_external matb);
 RcppExport SEXP _LDshrink_calc_cov_p_exp(SEXP mataSEXP, SEXP matbSEXP) {
@@ -56,52 +109,71 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// calcLD_par
-Eigen::MatrixXd calcLD_par(const Matrix_external hmat, const arrayxd_external map, const arrayxd_external ldparams, const arrayxi_external id);
-RcppExport SEXP _LDshrink_calcLD_par(SEXP hmatSEXP, SEXP mapSEXP, SEXP ldparamsSEXP, SEXP idSEXP) {
+// calc_ld_h5_exp
+void calc_ld_h5_exp(const std::string input_file, const std::string output_file, const std::vector<int>& ld_region, const std::vector<double>& mapd, const double m, const double Ne, const double cutoff, const bool SNPfirst);
+RcppExport SEXP _LDshrink_calc_ld_h5_exp(SEXP input_fileSEXP, SEXP output_fileSEXP, SEXP ld_regionSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP SNPfirstSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Matrix_external >::type hmat(hmatSEXP);
-    Rcpp::traits::input_parameter< const arrayxd_external >::type map(mapSEXP);
-    Rcpp::traits::input_parameter< const arrayxd_external >::type ldparams(ldparamsSEXP);
-    Rcpp::traits::input_parameter< const arrayxi_external >::type id(idSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcLD_par(hmat, map, ldparams, id));
-    return rcpp_result_gen;
-END_RCPP
-}
-// haplo_2_geno
-Eigen::MatrixXd haplo_2_geno(const Eigen::MatrixXd haplo, bool snps_in_rows);
-RcppExport SEXP _LDshrink_haplo_2_geno(SEXP haploSEXP, SEXP snps_in_rowsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type haplo(haploSEXP);
-    Rcpp::traits::input_parameter< bool >::type snps_in_rows(snps_in_rowsSEXP);
-    rcpp_result_gen = Rcpp::wrap(haplo_2_geno(haplo, snps_in_rows));
-    return rcpp_result_gen;
-END_RCPP
-}
-// haplo_2_geno_i
-Eigen::MatrixXi haplo_2_geno_i(const Eigen::MatrixXi haplo, bool snps_in_rows);
-RcppExport SEXP _LDshrink_haplo_2_geno_i(SEXP haploSEXP, SEXP snps_in_rowsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXi >::type haplo(haploSEXP);
-    Rcpp::traits::input_parameter< bool >::type snps_in_rows(snps_in_rowsSEXP);
-    rcpp_result_gen = Rcpp::wrap(haplo_2_geno_i(haplo, snps_in_rows));
-    return rcpp_result_gen;
-END_RCPP
-}
-// calc_nmsum
-double calc_nmsum(const double m);
-RcppExport SEXP _LDshrink_calc_nmsum(SEXP mSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string >::type input_file(input_fileSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type output_file(output_fileSEXP);
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type ld_region(ld_regionSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double>& >::type mapd(mapdSEXP);
     Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    rcpp_result_gen = Rcpp::wrap(calc_nmsum(m));
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type SNPfirst(SNPfirstSEXP);
+    calc_ld_h5_exp(input_file, output_file, ld_region, mapd, m, Ne, cutoff, SNPfirst);
+    return R_NilValue;
+END_RCPP
+}
+// less_pos
+bool less_pos(const int l_chrom, const int l_pos, const int r_chrom, const int r_pos);
+RcppExport SEXP _LDshrink_less_pos(SEXP l_chromSEXP, SEXP l_posSEXP, SEXP r_chromSEXP, SEXP r_posSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int >::type l_chrom(l_chromSEXP);
+    Rcpp::traits::input_parameter< const int >::type l_pos(l_posSEXP);
+    Rcpp::traits::input_parameter< const int >::type r_chrom(r_chromSEXP);
+    Rcpp::traits::input_parameter< const int >::type r_pos(r_posSEXP);
+    rcpp_result_gen = Rcpp::wrap(less_pos(l_chrom, l_pos, r_chrom, r_pos));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sorted_snp_df
+bool sorted_snp_df(const Rcpp::DataFrame& snp_info);
+RcppExport SEXP _LDshrink_sorted_snp_df(SEXP snp_infoSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type snp_info(snp_infoSEXP);
+    rcpp_result_gen = Rcpp::wrap(sorted_snp_df(snp_info));
+    return rcpp_result_gen;
+END_RCPP
+}
+// set_ld_region
+Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame& ld_regions, const Rcpp::DataFrame& snp_info, const bool assign_all);
+RcppExport SEXP _LDshrink_set_ld_region(SEXP ld_regionsSEXP, SEXP snp_infoSEXP, SEXP assign_allSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type ld_regions(ld_regionsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type snp_info(snp_infoSEXP);
+    Rcpp::traits::input_parameter< const bool >::type assign_all(assign_allSEXP);
+    rcpp_result_gen = Rcpp::wrap(set_ld_region(ld_regions, snp_info, assign_all));
+    return rcpp_result_gen;
+END_RCPP
+}
+// interpolate_map
+Rcpp::NumericVector interpolate_map(const Rcpp::NumericVector& map, const Rcpp::IntegerVector map_pos, const Rcpp::IntegerVector target_pos);
+RcppExport SEXP _LDshrink_interpolate_map(SEXP mapSEXP, SEXP map_posSEXP, SEXP target_posSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type map(mapSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type map_pos(map_posSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type target_pos(target_posSEXP);
+    rcpp_result_gen = Rcpp::wrap(interpolate_map(map, map_pos, target_pos));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -126,6 +198,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::StringVector >::type rsid(rsidSEXP);
     Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
     rcpp_result_gen = Rcpp::wrap(ld2df(ldmat, rsid, r2cutoff));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calc_cov_exp_f
+Eigen::MatrixXd calc_cov_exp_f(Eigen::MatrixXd mat);
+RcppExport SEXP _LDshrink_calc_cov_exp_f(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(calc_cov_exp_f(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cov_mkl
+Rcpp::NumericMatrix cov_mkl(Eigen::MatrixXd& X);
+RcppExport SEXP _LDshrink_cov_mkl(SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd& >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(cov_mkl(X));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -159,6 +253,36 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Matrix_external >::type covmat(covmatSEXP);
     rcpp_result_gen = Rcpp::wrap(cov_2_cor_exp(covmat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcLDt
+Rcpp::List calcLDt(Matrix_external hmata, arrayxd_external mapa, double m, double Ne, double cutoff);
+RcppExport SEXP _LDshrink_calcLDt(SEXP hmataSEXP, SEXP mapaSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Matrix_external >::type hmata(hmataSEXP);
+    Rcpp::traits::input_parameter< arrayxd_external >::type mapa(mapaSEXP);
+    Rcpp::traits::input_parameter< double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< double >::type cutoff(cutoffSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcLDt(hmata, mapa, m, Ne, cutoff));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcLD_prel
+Eigen::MatrixXd calcLD_prel(Eigen::MatrixXd hmata, const std::vector<double> mapa, const double m, const double Ne, const double cutoff);
+RcppExport SEXP _LDshrink_calcLD_prel(SEXP hmataSEXP, SEXP mapaSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type hmata(hmataSEXP);
+    Rcpp::traits::input_parameter< const std::vector<double> >::type mapa(mapaSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcLD_prel(hmata, mapa, m, Ne, cutoff));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -208,23 +332,48 @@ BEGIN_RCPP
 END_RCPP
 }
 
+// validate (ensure exported C++ functions exist before calling them)
+static int _LDshrink_RcppExport_validate(const char* sig) { 
+    static std::set<std::string> signatures;
+    if (signatures.empty()) {
+        signatures.insert("int(*blosc)()");
+    }
+    return signatures.find(sig) != signatures.end();
+}
+
+// registerCCallable (register entry points for exported C++ functions)
+RcppExport SEXP _LDshrink_RcppExport_registerCCallable() { 
+    R_RegisterCCallable("LDshrink", "_LDshrink_blosc", (DL_FUNC)_LDshrink_blosc_try);
+    R_RegisterCCallable("LDshrink", "_LDshrink_RcppExport_validate", (DL_FUNC)_LDshrink_RcppExport_validate);
+    return R_NilValue;
+}
+
 static const R_CallMethodDef CallEntries[] = {
+    {"_LDshrink_blosc", (DL_FUNC) &_LDshrink_blosc, 0},
+    {"_LDshrink_test_cumsum", (DL_FUNC) &_LDshrink_test_cumsum, 1},
+    {"_LDshrink_ld_chunks", (DL_FUNC) &_LDshrink_ld_chunks, 1},
     {"_LDshrink_calc_cov_p_exp", (DL_FUNC) &_LDshrink_calc_cov_p_exp, 2},
     {"_LDshrink_calc_cov_scaled", (DL_FUNC) &_LDshrink_calc_cov_scaled, 2},
     {"_LDshrink_cov_2_cor_exp_p", (DL_FUNC) &_LDshrink_cov_2_cor_exp_p, 3},
     {"_LDshrink_eigen_dist", (DL_FUNC) &_LDshrink_eigen_dist, 2},
-    {"_LDshrink_calcLD_par", (DL_FUNC) &_LDshrink_calcLD_par, 4},
-    {"_LDshrink_haplo_2_geno", (DL_FUNC) &_LDshrink_haplo_2_geno, 2},
-    {"_LDshrink_haplo_2_geno_i", (DL_FUNC) &_LDshrink_haplo_2_geno_i, 2},
-    {"_LDshrink_calc_nmsum", (DL_FUNC) &_LDshrink_calc_nmsum, 1},
+    {"_LDshrink_calc_ld_h5_exp", (DL_FUNC) &_LDshrink_calc_ld_h5_exp, 8},
+    {"_LDshrink_less_pos", (DL_FUNC) &_LDshrink_less_pos, 4},
+    {"_LDshrink_sorted_snp_df", (DL_FUNC) &_LDshrink_sorted_snp_df, 1},
+    {"_LDshrink_set_ld_region", (DL_FUNC) &_LDshrink_set_ld_region, 3},
+    {"_LDshrink_interpolate_map", (DL_FUNC) &_LDshrink_interpolate_map, 3},
     {"_LDshrink_calc_theta", (DL_FUNC) &_LDshrink_calc_theta, 1},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 3},
+    {"_LDshrink_calc_cov_exp_f", (DL_FUNC) &_LDshrink_calc_cov_exp_f, 1},
+    {"_LDshrink_cov_mkl", (DL_FUNC) &_LDshrink_cov_mkl, 1},
     {"_LDshrink_calc_cov_exp", (DL_FUNC) &_LDshrink_calc_cov_exp, 1},
     {"_LDshrink_calc_variance_exp", (DL_FUNC) &_LDshrink_calc_variance_exp, 1},
     {"_LDshrink_cov_2_cor_exp", (DL_FUNC) &_LDshrink_cov_2_cor_exp, 1},
+    {"_LDshrink_calcLDt", (DL_FUNC) &_LDshrink_calcLDt, 5},
+    {"_LDshrink_calcLD_prel", (DL_FUNC) &_LDshrink_calcLD_prel, 5},
     {"_LDshrink_calcLD_exp", (DL_FUNC) &_LDshrink_calcLD_exp, 5},
     {"_LDshrink_sp_calcLD_exp", (DL_FUNC) &_LDshrink_sp_calcLD_exp, 5},
     {"_LDshrink_sp_calcLD_symm_exp", (DL_FUNC) &_LDshrink_sp_calcLD_symm_exp, 5},
+    {"_LDshrink_RcppExport_registerCCallable", (DL_FUNC) &_LDshrink_RcppExport_registerCCallable, 0},
     {NULL, NULL, 0}
 };
 

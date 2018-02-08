@@ -1,23 +1,52 @@
-context("Matching functions")
+context("utils")
 
-test_that("matching SNPs to regions works with one chromosome",{
-  library(tidyverse)
-  nregs <- 10
-  reg_test <- data_frame(chr = 3L,start = as.integer(seq(1,1e6,length.out = 10))) %>% 
-    mutate(stop = start + sample(10:1000,size = n(),replace = T),
-           range_id = paste0("range: ",1:n()),
-           num_snps = sample(0:5,n(),replace = T))
-  good_snps <- split(reg_test,reg_test$range_id) %>% map(function(x){
-    tret <- bind_rows(replicate(x$num_snps,data_frame(chr=x$chr,pos=as.integer(runif(n=1,x$start,x$stop))),simplify=F))
-    if(nrow(tret)>0){
-      return(tret)
-    }else{
-      return(NULL)
-    }
-  }) %>% bind_rows() %>% mutate(snp_id = paste0("SNP: ",1:n()))
-  test_map <- match_SNP(reg_test,good_snps)
-  snp_ct <- group_by(test_map,range_id) %>% summarise(n_snps=n()) %>% inner_join(distinct(test_map,range_id,num_snps))
-  expect_equal(snp_ct$num_snps,snp_ct$n_snps)  
+library(dplyr)
+data(break_df)
+
+test_that("can break up LD regions using ranges",{
+  
+  ldr <- 1:10
+  ldv <- integer()
+  for(i in ldr){
+    ldv <- c(ldv,rep(i,sample(0:10,1)))
+  }
+  res <- ld_chunks(ldv)
+  r_res <- split(ldv,ldv) %>% map_int(length)
+  
+  expect_equivalent(res,r_res)
+  
+})
+
+test_that("can map variants to LD regions",{
+
+  data("break_df")
+  bad_reg <- dplyr::group_by(break_df,chr) %>% dplyr::slice(c(1)) %>% dplyr::mutate(stop=start,start=0) %>% dplyr::ungroup()
+  bad_reg2 <- dplyr::group_by(break_df,chr) %>% dplyr::slice(n()) %>% dplyr::mutate(start=stop,stop=stop+100) %>% dplyr::ungroup()
+  bad_reg <- dplyr::bind_rows(bad_reg,bad_reg2)
+  make_snps <- function(chr,start,stop,...){
+    n_snps <- sample(0:min(c(10,stop-start)),1)
+    return(tibble::data_frame(chr=rep(chr,n_snps),pos=sort(sample((start+1):(stop-1),n_snps,replace=F))))
+  }
+  bad_snps <- purrr::pmap_dfr(bad_reg,make_snps) %>% dplyr::mutate(isbad=T)
+  good_snps <- purrr::pmap_dfr(break_df,make_snps) %>% dplyr::mutate(isbad=F)
+  all_snps <- dplyr::bind_rows(good_snps,bad_snps) %>% dplyr::arrange(chr,pos) %>% dplyr::distinct(chr,pos,.keep_all = T)
+  
+  all_reg <- dplyr::bind_rows()
+  reg_id <- set_ld_region(ld_regions = break_df,snp_info = all_snps)
+  all_snps <- dplyr::mutate(all_snps,region_id=reg_id)
+
+  
+  check_reg <- dplyr::inner_join(all_snps,break_df)
+  dplyr::filter(check_reg,!dplyr::between(pos,start,stop))
+  good_res <- purrr::pmap_lgl(check_reg,function(pos,start,stop,...){
+    dplyr::between(pos,start,stop)
+  })
+  expect_equal(all(good_res),T)
 })
 
 
+
+
+
+  
+  
