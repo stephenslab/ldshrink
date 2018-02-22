@@ -10,4 +10,8 @@ compile_commands.json
 inst/snakemake_files/*txt
 inst/snakemake_files/snakejob*
 *~
+**~
 *.snakemake*
+GTAGS
+GRTAGS
+GPATH

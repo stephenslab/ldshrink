@@ -1,4 +1,4 @@
-#include <range/v3/all.hpp> 
+#include "EigenH5.h"
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
@@ -7,59 +7,20 @@
 #include <progress.hpp>
 #include <progress_bar.hpp>
 #include<tuple>
-#include <EigenH5.h>
 
 
 //#include <mkl.h>
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(RcppParallel)]]
-// [[Rcpp::depends(RcppProgress)]]
+//[[Rcpp::depends(RcppEigen)]]
+//[[Rcpp::depends(RcppParallel)]]
+//[[Rcpp::depends(RcppProgress)]]
+//[[Rcpp::depends(EigenH5)]]
+
 
 typedef std::tuple<float,float ,float,float> ldp;
 typedef std::tuple<int,int,int> row_col_dim;
 
-//[[Rcpp::export]]
-Rcpp::IntegerVector test_cumsum(Rcpp::IntegerVector ld_region){
-  using namespace ranges;
-  
-  // iterator_range<Rcpp::IntegerVector::iterator> rgi {ld_region.begin(),ld_region.end()};
-
-  
-  iterator_range<Rcpp::IntegerVector::iterator> rgi {ld_region.begin(),ld_region.end()};
-  int cnt = ld_region[0];
-  std::vector<int> retvec = view::partial_sum(rgi, [&cnt](int i, int j) { 
-    Rcpp::Rcout<<"cnt was: "<<cnt<<std::endl;
-    cnt+=j;
-    Rcpp::Rcout<<"cnt is: "<<cnt<<std::endl;
-    
-    return(cnt);
-  });
-  
-  
-  return(Rcpp::wrap(retvec));
-}
 
 
-//[[Rcpp::export]]
-Rcpp::IntegerMatrix ld_chunks(Rcpp::IntegerVector ld_region){
-
-  using namespace ranges;
-  iterator_range<Rcpp::IntegerVector::iterator> ld_r {ld_region.begin(),ld_region.end()};
-  //std::vector<int> ld_r(ld_region.begin(),ld_region.end());
-  auto rng= view::zip(view::ints(0),ld_r) | view::group_by([](auto a, auto b) {
-    return std::get<1>(a) == std::get<1>(b);});
-  auto retr=view::transform(rng,[](auto r){
-      int g0 = std::get<0>(ranges::index(r,0));
-      return(view::concat(view::single(g0),view::single(distance(r))));});
-  
-  std::vector<int> retv = view::join(retr);
-  const size_t n_ld=retv.size()/2;
-  Eigen::Map<Eigen::Matrix<int,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >tm(retv.data(),n_ld,2);
-  Rcpp::IntegerMatrix retm= Rcpp::wrap(tm);
- 
-  return(Rcpp::wrap(retm));  
-  //  std::vector<int>
-}
 
 
 Eigen::MatrixXd calc_cov_p(c_Matrix_external mata, c_Matrix_external matb){
@@ -81,10 +42,7 @@ Eigen::MatrixXd calc_cov_scaled(Matrix_external centereda, Matrix_external cente
   return (((centereda.transpose()*centeredb)/double(centereda.rows()-1)));  
 }
 
-Eigen::ArrayXd calc_variance(c_Matrix_external mat){
-  int n=mat.rows();
-  return(((mat.rowwise()-(mat.colwise().mean())).array().square().colwise().sum())/(n-1));
-}
+
 
 
 
@@ -305,272 +263,204 @@ int bsize=mapb.size();
 
 typedef tbb::spin_mutex Mutex;
 
-
-
 //[[Rcpp::export]]
-void calc_ld_h5_exp(const std::string input_file,
-                    const std::string output_file,
-		    const std::vector<int> &ld_region,
-		    const std::vector<double> &mapd,
-                    const double m,
-		    const double Ne,
-		    const double cutoff,
-		    const bool SNPfirst=true){
-
-  using namespace HighFive;
-  
-  auto Xf=File(input_file,File::ReadOnly);
-  auto Sf=File(output_file,File::ReadWrite|File::Create);
-  
-  auto Xd=Xf.getDataSet("dosage");
-  auto X_dim = Xd.getDataDimensions();
-  const size_t N= SNPfirst ? X_dim[1] : X_dim[0];
-  const size_t p=SNPfirst ? X_dim[0] : X_dim[1];
-  
-  //  auto Md=Xf.getGroup("SNPinfo").getDataSet("map");
+void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
+                      const Rcpp::DataFrame output_dff,
+                      const double m,
+                      const double Ne,
+                      const double cutoff,
+                      const bool SNPfirst=true,
+                      const bool evd=true){
   auto r = register_blosc(nullptr,nullptr);
-  //  std::vector<int> ld_region;
-  //  Xf.getGroup("SNPinfo").getDataSet("region_id").read(ld_region);
-  if(ld_region.size()!=p){
-    Rcpp::Rcerr<<"Size of ld_region: "<<ld_region.size()<<std::endl;
-    Rcpp::Rcerr<<"SNPs in dosage: "<<p<<std::endl;
-    Rcpp::stop("size of SNPinfo/region_ids is not equal to number of SNPs in dosage");
-  }
-  
-  
-  using namespace ranges;
-  //iterator_range<Rcpp::IntegerVector::iterator> ld_r {ld_region.begin(),ld_region.end()};
-  //std::vector<int> ld_r(ld_region.begin(),ld_region.end());
-  Mutex mutex;
-  auto ldshrink_lambda_evd = [&](const std::string& sgname,const size_t begin, const size_t chunk_size){
-    std::vector<double> tmap(chunk_size);
-    std::copy_n(mapd.begin()+begin,chunk_size,tmap.begin());
-    Eigen::MatrixXd X;
-    Eigen::MatrixXd S(chunk_size,chunk_size);
-    {
-      tbb::spin_mutex::scoped_lock lock(mutex);
-      if(SNPfirst){
-        Xd.selectEigen({begin,0},{chunk_size,N},{}).read(X);
-        X.transposeInPlace();
-      }else{
-        Xd.selectEigen({0,begin},{N,chunk_size},{}).read(X);
-      }
-      //      Md.select({begin},{chunk_size},{}).read(map);
-    }
-    
-    calcLD_pa(X,tmap,S,m,Ne,cutoff);
-    Eigen::VectorXd Rsq=S.array().square().colwise().sum()-1;
-    {      
-      tbb::spin_mutex::scoped_lock lock(mutex);
-      Filter filter({chunk_size,chunk_size},FILTER_BLOSC,1);
-      
-      auto Sd=Sf.createOrGetGroup("LD").createOrGetGroup(sgname).createDataSet("R",DataSpace::From(S),AtomicType<double>(),filter.getId(),false);
-      Sd.write(S);
-      
-    }
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es;
-    //Eigen::EigenSolver<Eigen::MatrixXd> es;
-    es.compute(S);
-    Eigen::MatrixXd Q=es.eigenvectors().rowwise().reverse();
-    Eigen::VectorXd D=es.eigenvalues().reverse();
-    Eigen::Index d_idx=0;
-    double Dmin= D.minCoeff(&d_idx);
-    if(Dmin<=0){
-      Rcpp::Rcerr<<"In ld_region "<<sgname<<"from "<<begin<<"to "<<begin+chunk_size+1<<std::endl;
-      Rcpp::Rcerr<<"Encountered non-positive eigenvalue: "<<Dmin<<" at index: "<<d_idx<<std::endl;
-      Rcpp::stop("Min of eigenvalue must be positive");
-    }
-    {      
-      tbb::spin_mutex::scoped_lock lock(mutex);
-      Filter filter({chunk_size,chunk_size},FILTER_BLOSC,1);
-      auto Qd=Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("Q",DataSpace::From(S),AtomicType<double>(),filter.getId(),false);
-      Qd.write(Q);
-      Filter filterd({chunk_size},FILTER_BLOSC,1);
-      auto Dd=Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("D",DataSpace::From(D),AtomicType<double>(),filterd.getId(),false);
-      Dd.write(D);
-      auto Rsqd=Sf.createOrGetGroup("LDSC").createOrGetGroup(sgname).createDataSet("L2",DataSpace::From(Rsq),AtomicType<double>(),filterd.getId(),false);
-      Rsqd.write(Rsq);
-    }
-    
-    
-  };
-  
-  auto rng= view::zip(view::ints(0),ld_region) | view::group_by([](auto a, auto b) {
-      return std::get<1>(a) == std::get<1>(b);});
-  
-  const size_t num_reg = distance(rng);
+  // EigenH5::start_blosc();
+  using Rowmat=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+  std::unordered_map<std::string,std::shared_ptr<HighFive::File> >  m_file_map;
+  std::unordered_map<std::string,std::shared_ptr<HighFive::Group> >  m_group_map;
+  std::unordered_map<std::string,std::shared_ptr<HighFive::DataSet> > m_dataset_map;
+  MatSlices input_f(input_dff,m_file_map,m_group_map,m_dataset_map,true);
+  MatSlices output_f(output_dff,m_file_map,m_group_map,m_dataset_map,false);
+  Eigen::SelfAdjointEigenSolver<Rowmat> es;
+  Rowmat H;
+  Rowmat S;
+  Rowmat Q;
+  Rowmat D;
+  std::vector<double> mapd;
+  Rowmat Rsq;
+  const size_t num_reg=input_f.chunk_map.size();
   Progress prog_bar(num_reg, true);
-  ranges::for_each(rng,[&](auto r){
-    auto first_el=ranges::index(r,0);
-    const size_t offset = static_cast<size_t>(std::get<0>(first_el));
-    const int tld_region = std::get<1>(first_el);
-    if(!Rcpp::IntegerVector::is_na(tld_region)){
-      const size_t chunksize = distance(r);
-      ldshrink_lambda_evd(std::to_string(tld_region),offset,chunksize);
-      prog_bar.increment();
+
+  for(auto m_it=input_f.chunk_map.begin();m_it!=input_f.chunk_map.end();m_it++){
+    int chunk_id = m_it->first;
+    input_f.read_chunk(chunk_id,"dosage",H);
+    if(SNPfirst){
+      H.transposeInPlace();
     }
-    });
+    input_f.read_chunk_vector(chunk_id,"map",mapd);
+    const size_t p_chunk=H.cols();
+    S.resize(p_chunk,p_chunk);
+    calcLD_pa(H,mapd,S,m,Ne,cutoff);
+
+    output_f.write_chunk(chunk_id,"R",S);
+    if(evd){
+      es.compute(S);
+      Q=es.eigenvectors().rowwise().reverse();
+      D=es.eigenvalues().reverse();
+      Eigen::Index d_idx=0;
+      Eigen::Index ta=0;
+      double Dmin= D.minCoeff(&d_idx,&ta);
+      if(ta!=0){
+        Rcpp::stop("Indexeing has gotten screwy");
+      }
+
+      output_f.write_chunk(chunk_id,"Q",Q);
+      output_f.write_chunk(chunk_id,"D",D);
+    }
+
+    Rsq=S.array().square().colwise().sum()-1;
+    output_f.write_chunk(chunk_id,"L2",Rsq);
+    prog_bar.increment();
+  }
+
 }
-
-// 
-// class LDpar {
-//   const int N;
-//   const int p;
-//   const double theta;
-//   const arrayxd_external ldparams;
-//   const double chunksize;
-//   const std::string out_file;
-//   const std::string group_name;
-//   const std::string data_name;
-//   mutable Mutex* mutex;
-//   const std::vector< std::pair< std::pair<int,int> , std::pair<int,int> > > chunks_vec;
-//   public:
-//   LDpar(const arrayxd_external _ldparams,const std::vector<std::pair<size_t,size_t> > ld_chunks,const std::vector<std::string> names,Mutex &ref_mut):
-//     N(hmat.rows()),
-//     p(hmat.cols()),
-//     ldparams(_ldparams),
-//     theta(_ldparams(3)),
-//     chunksize(_chunksize),
-//     out_file(names[0]),
-//     group_name(names[1]),
-//     data_name(names[2]),
-//     mutex(&ref_mut),
-//     chunks_vec(upper_diagonal_chunks(chunksize,p))
-//     {
-//     
-//   }
-//     void operator()(const tbb::blocked_range<size_t> &r) const{
-//       for(size_t i=r.begin();i!=r.end();i++){
-//         auto p_pairs=chunks_vec[i];
-//         unsigned long chunkstart_row = p_pairs.first.first;
-//         unsigned long chunksize_row = p_pairs.first.second;
-//         unsigned long chunkstart_col = p_pairs.second.first;
-//         unsigned long chunksize_col = p_pairs.second.second;
-//         const auto Ablock=chunk_block(chunkstart_row,chunksize,p);
-//         const auto Bblock=chunk_block(chunkstart_col,chunksize,p);
-//         const bool isDiag=chunkstart_row==chunkstart_col;
-//         
-//         
-//         const c_Matrix_external hmata(hmat.block(0,Ablock.first,N,Ablock.second).data(),N,Ablock.second);
-//         const c_Matrix_external hmatb(hmat.block(0,Bblock.first,N,Bblock.second).data(),N,Bblock.second);
-//         
-//         const c_arrayxd_external mapa(map.segment(Ablock.first,Ablock.second).data(),Ablock.second);
-//         const c_arrayxd_external mapb(map.segment(Bblock.first,Bblock.second).data(),Bblock.second);
-//         Eigen::MatrixXd covmat =calcLD_cov_d(hmata, mapa,  hmatb, mapb, ldparams, isDiag);
-//         if(isDiag){
-//           Eigen::ArrayXd covdiag= covmat.diagonal();
-//           cov_2_cor_p(covmat,covdiag,covdiag);
-//           covmat.diagonal().setOnes();
-//         }else{
-//           Eigen::ArrayXd cov_a=calc_variance(hmata)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-//           Eigen::ArrayXd cov_b=calc_variance(hmatb)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-//           cov_2_cor_p(covmat,cov_a,cov_b);
-//         }
-//         {
-//           using namespace HighFive;
-//           tbb::spin_mutex::scoped_lock lock(*mutex);
-//           File file(out_file,File::ReadWrite);
-//           auto grp = file.getGroup(group_name);
-//           auto dataset = grp.getDataSet(data_name);
-//           dataset.select({chunkstart_row,chunkstart_col},{chunksize_row,chunksize_col}).write(covmat);
-//           if(!isDiag){
-//             // covmat.transposeInPlace();
-//             // dataset.select({chunkstart_col,chunkstart_row},{chunksize_col,chunksize_row}).write(covmat);
-//           }
-//       }
-//     }
-//     }
-//     
-// };
-
+  
 
 
 // 
 // 
+// void calc_ld_h5_exp(const std::string input_file,
+//                     const std::string output_file,
+// 		    const std::vector<int> &ld_region,
+// 		    const std::vector<double> &mapd,
+//                     const double m,
+// 		    const double Ne,
+// 		    const double cutoff,
+// 		    const bool SNPfirst=true){
 // 
-// void calcLD_par_h5(const Matrix_external hmat,const arrayxd_external map,const arrayxd_external ldparams,const int chunksize,const std::vector<std::string> grp_names){
-//   
-//   auto  out_file = grp_names[0];
-//   auto group_name = grp_names[1];
-//   auto data_name = grp_names[2];
-//   
-//   const int N=hmat.rows();
-//   const int p=map.size();
-//   
 //   using namespace HighFive;
-//   {
-//   File file(out_file,File::ReadWrite,File::Create);
-//   auto grp = file.createGroup(group_name);
+//   using Rowmat=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
+//   auto Xf=File(input_file,File::ReadOnly);
+//   auto Sf=File(output_file,File::ReadWrite|File::Create);
 //   
-//   // char *version, *date;
-//   // int r;
+//   auto Xd=Xf.getDataSet("dosage");
+//   auto X_dim = Xd.getDataDimensions();
+//   const size_t N= SNPfirst ? X_dim[1] : X_dim[0];
+//   const size_t p=SNPfirst ? X_dim[0] : X_dim[1];
 //   
-//   /* Register the filter with the library */
-//   // r = register_blosc(&version, &date);
-//   // std::vector<size_t> cshape{1000,1000};
-//   hsize_t chunk[2] = {1000,1000};
-//   auto dcpl = H5Pcreate(H5P_DATASET_CREATE);
-//   auto status = H5Pset_deflate (dcpl, 9);
-//   status = H5Pset_chunk (dcpl, 2, chunk);
-//   // Filter filter(cshape,H5Z_FILTER_DEFLATE,r);
-//   auto dataset = grp.createDataSet(data_name,DataSpace({(unsigned long)p,(unsigned long)p}),AtomicType<double>(),dcpl);
+//   //  auto Md=Xf.getGroup("SNPinfo").getDataSet("map");
+//   auto r = register_blosc(nullptr,nullptr);
+//   //  std::vector<int> ld_region;
+//   //  Xf.getGroup("SNPinfo").getDataSet("region_id").read(ld_region);
+//   if(ld_region.size()!=p){
+//     Rcpp::Rcerr<<"Size of ld_region: "<<ld_region.size()<<std::endl;
+//     Rcpp::Rcerr<<"SNPs in dosage: "<<p<<std::endl;
+//     Rcpp::stop("size of SNPinfo/region_ids is not equal to number of SNPs in dosage");
 //   }
-//   auto chunks_vec=upper_diagonal_chunks(chunksize,p);
-//   size_t num_chunks_tot = chunks_vec.size();
-//   tbb::spin_mutex mutex;
-//   LDpar ldp(hmat,map,ldparams,chunksize,grp_names,mutex);
-//   tbb::parallel_for(tbb::blocked_range<size_t>(0,num_chunks_tot), ldp);
+//   
+//   
+//   using namespace ranges;
+//   //iterator_range<Rcpp::IntegerVector::iterator> ld_r {ld_region.begin(),ld_region.end()};
+//   //std::vector<int> ld_r(ld_region.begin(),ld_region.end());
+//   Mutex mutex;
+//   Eigen::SelfAdjointEigenSolver<Rowmat> es;
+//   auto ldshrink_lambda_evd = [&](const std::string& sgname,const size_t begin, const size_t chunk_size){
+//     std::vector<double> tmap(chunk_size);
+//     std::copy_n(mapd.begin()+begin,chunk_size,tmap.begin());
+//     Rowmat X;
+//     Rowmat S(chunk_size,chunk_size);
+//     {
+//       // tbb::spin_mutex::scoped_lock lock(mutex);
+//       // //Rcpp::Rcout<<"Reading SNP"<<std::endl;
+//       if(SNPfirst){
+//         Xd.selectEigen({begin,0},{chunk_size,N},{}).read(X);
+//         X.transposeInPlace();
+//       }else{
+//         Xd.selectEigen({0,begin},{N,chunk_size},{}).read(X);
+//       }
+//       //      Md.select({begin},{chunk_size},{}).read(map);
+//     }
+//     //Rcpp::Rcout<<"Computing R"<<std::endl;
+//     
+//     calcLD_pa(X,tmap,S,m,Ne,cutoff);
+//     
+//     Eigen::VectorXd Rsq=S.array().square().colwise().sum()-1;
+//     {      
+//       // tbb::spin_mutex::scoped_lock lock(mutex);
+//       //Rcpp::Rcout<<"Writing R"<<std::endl;
+//       Sf.getGroup("LD").getGroup(sgname).getDataSet("R").write(S);
+//     }
+//     
+//     //Eigen::EigenSolver<Rowmat> es;
+//     //Rcpp::Rcout<<"Computing Q"<<std::endl;
+//     
+//     es.compute(S);
+//     Rowmat Q=es.eigenvectors().rowwise().reverse();
+//     Eigen::VectorXd D=es.eigenvalues().reverse();
+//     Eigen::Index d_idx=0;
+//     double Dmin= D.minCoeff(&d_idx);
+//     if(Dmin<=0){
+//       Rcpp::Rcerr<<"In ld_region "<<sgname<<"from "<<begin<<"to "<<begin+chunk_size+1<<std::endl;
+//       Rcpp::Rcerr<<"Encountered non-positive eigenvalue: "<<Dmin<<" at index: "<<d_idx<<std::endl;
+//       Rcpp::stop("Min of eigenvalue must be positive");
+//     }
+//     {      
+//       // tbb::spin_mutex::scoped_lock lock(mutex);
+//       //Rcpp::Rcout<<"Writing Q"<<std::endl;
+//       
+//       Sf.getGroup("EVD").createOrGetGroup(sgname).getDataSet("Q").write(Q);
+//       Sf.getGroup("EVD").createOrGetGroup(sgname).getDataSet("D").write(D);
+//       Sf.getGroup("LDSC").createOrGetGroup(sgname).getDataSet("L2").write(Rsq);
+//     }
+//     
+//     
+//   };
+//   
+//   auto rng= view::zip(view::ints(0),ld_region) | view::group_by([](auto a, auto b) {
+//       return std::get<1>(a) == std::get<1>(b);});
+//   
+//   const size_t num_reg = distance(rng);
 // 
+//   Rcpp::Rcout<<"Allocating data on disk"<<std::endl;
+//   ranges::for_each(rng,[&](auto r){
+//     auto first_el=ranges::index(r,0);
+//     const size_t offset = static_cast<size_t>(std::get<0>(first_el));
+//     const int tld_region = std::get<1>(first_el);
+//     if(!Rcpp::IntegerVector::is_na(tld_region)){
+//       const size_t chunksize = distance(r);
+//       {
+//         tbb::spin_mutex::scoped_lock lock(mutex);
+//         Filter filter({chunksize,chunksize},FILTER_BLOSC,1);
+//         Filter filterd({chunksize},FILTER_BLOSC,1);
+//         
+//         std::string sgname= std::to_string(tld_region);
+//         Sf.createOrGetGroup("LD").createOrGetGroup(sgname).createDataSet("R",DataSpace({chunksize,chunksize}),AtomicType<double>(),filter.getId(),false);
+//         Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("Q",DataSpace({chunksize,chunksize}),AtomicType<double>(),filter.getId(),false);
+//         Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("D",DataSpace(chunksize),AtomicType<double>(),filterd.getId(),false);
+//         Sf.createOrGetGroup("LDSC").createOrGetGroup(sgname).createDataSet("L2",DataSpace(chunksize),AtomicType<double>(),filterd.getId(),false);
+//       }
+//   
+//     }
+//   });
+//   Rcpp::Rcout<<"Starting LDshrink"<<std::endl;
+//   // prog_bar.update(0);
+//   Progress prog_bar(num_reg, true);
+//   ranges::for_each(rng,[&](auto r){
+//     auto first_el=ranges::index(r,0);
+//     const size_t offset = static_cast<size_t>(std::get<0>(first_el));
+//     const int tld_region = std::get<1>(first_el);
+//     if(!Rcpp::IntegerVector::is_na(tld_region)){
+//       const size_t chunksize = distance(r);
+//       ldshrink_lambda_evd(std::to_string(tld_region),offset,chunksize);
+//       prog_bar.increment();
+//     }
+//     });
 // }
 
-// 
-// 
-// Eigen::MatrixXd calcLD_par(const Matrix_external hmat,const arrayxd_external map,const arrayxd_external ldparams,const arrayxi_external id){
-// 
-// 
-//   // Need to decide whether it's worth it to scale the matrices ahead of time or not (if we do, it's a little harder to tell if they're genotype or haplotype)
-//   double m,Ne,cutoff,theta;
-//   int Achunk,Bchunk,chunksize;
-//   
-//   m=ldparams(0);
-//   Ne=ldparams(1);
-//   cutoff=ldparams(2);
-//   theta=ldparams(3);
-//   
-//   Achunk=id(0);
-//   Bchunk=id(1);
-//   chunksize=id(2);
-//   //  std::tie(Achunk,Bchunk,chunksize) = id;
-//   
-//   const int N=hmat.rows();
-//   const int p=map.size();
-//   
-//   
-//   
-//   if(p!=hmat.cols()){
-//     Rcpp::stop("length of map must be equal to number of cols of hmat");
-//   }
-//   
-//   
-//   const auto Ablock=chunk_block(Achunk,chunksize,p);
-//   const auto Bblock=chunk_block(Bchunk,chunksize,p);
-//   const bool isDiag=Achunk==Bchunk;
-// 
-// 
-//   const c_Matrix_external hmata(hmat.block(0,Ablock.first,N,Ablock.second).data(),N,Ablock.second);
-//   const c_Matrix_external hmatb(hmat.block(0,Bblock.first,N,Bblock.second).data(),N,Bblock.second);
-//   
-//   const c_arrayxd_external mapa(map.segment(Ablock.first,Ablock.second).data(),Ablock.second);
-//   const c_arrayxd_external mapb(map.segment(Bblock.first,Bblock.second).data(),Bblock.second);
-//   Eigen::MatrixXd covmat =calcLD_cov_d(hmata, mapa,  hmatb, mapb, ldparams, isDiag);
-//   if(isDiag){
-//     Eigen::ArrayXd covdiag= covmat.diagonal();
-//     cov_2_cor_p(covmat,covdiag,covdiag);
-//     covmat.diagonal().setOnes();
-//   }else{
-//     Eigen::ArrayXd cov_a=calc_variance(hmata)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-//     Eigen::ArrayXd cov_b=calc_variance(hmatb)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-//     cov_2_cor_p(covmat,cov_a,cov_b);
-//   }
-//   return(covmat);
-// }
+
+
+
+
+
+
+
+
+

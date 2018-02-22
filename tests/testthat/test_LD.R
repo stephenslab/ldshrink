@@ -1,15 +1,28 @@
 context("Test LD calculations")
 
 
-test_that("Covariance with two input matrices works as expected",{
+test_that("Covariance works as expected",{
   
   inp_a <- matrix(runif(90*10),90,10)
-  inp_b <- matrix(runif(90*9),90,9)  
+  #inp_b <- matrix(runif(90*9),90,9)  
   
-  R_cov <- cov(inp_a,inp_b)
+  R_cov <- cov(inp_a)
   
-  ld_cov <- calc_cov_p(inp_a,inp_b)
+  ld_cov <- calc_cov(inp_a)
   expect_equal(ld_cov,R_cov)
+})
+
+test_that("cov2cor works as expected",{
+  inp_a <- matrix(runif(90*10),90,10)
+  #inp_b <- matrix(runif(90*9),90,9)  
+  
+  R_cov <- cov(inp_a)
+  
+  ld_cov <- calc_cov(inp_a)
+  expect_equal(ld_cov,R_cov)
+  R_cor <- cor(inp_a)
+  m_cor <- cov_2_cor(ld_cov)
+  expect_equal(m_cor,R_cor)  
   
 })
 
@@ -26,7 +39,7 @@ test_that("Covariance with two input matrices works as expected",{
 #   
 # })
 
-test_that("Trivial distributed case works",{
+test_that("HDF5 backed data",{
   
   
   library(LDshrink)
@@ -55,17 +68,12 @@ test_that("Trivial distributed case works",{
   testthat::expect_equal(nS,nRsig_1)
   
   
-  
-  
-  #tRsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
-  #nRsig <- calcLD_prel(Hpanel,tmap,m,Ne,cutoff)
   tfa <- tempfile()
   tfo <- tempfile()
   EigenH5::write_matrix_h5(tfa,"/","dosage",Hpanel)
-  #EigenH5::write_vector_h5(tfa,"SNPinfo","map",tmap)
-  ld_reg <- c(rep(1,p/2),rep(2,p/2))
+
   EigenH5::write_vector_h5(tfa,"SNPinfo","region_id",ld_reg)
-  calc_ld_h5_exp(tfa,tfo,m = m,Ne=Ne,cutoff=cutoff,SNPfirst = F)
+  calc_ld_h5_exp(tfa,tfo,ld_region = ld_reg,mapd = tmap,m = m,Ne=Ne,cutoff=cutoff,SNPfirst = F)
   nS <- EigenH5::read_mat_h5(tfo,"LD/1","R")
   nRsig_1 <- calcLD_prel(Hpanel[,1:(p/2)],tmap[1:(p/2)],m,Ne,cutoff)
   expect_equal(nS,nRsig_1)
@@ -93,35 +101,114 @@ test_that("Trivial distributed case works",{
   expect_equal(nRsig_2,Revd)
 })
 
-# ts <- sample(1:100)
-# nts <- test_cumsum(ts)
-# tc <- cumsum(ts)
 
-# test_that("Trivial distributed case works",{
-#   
-#   m=85
-#   Ne=1490.672741
-#   cutoff=1e-3
-#   data("haplomat")
-#   data("mapdat")
-#   Hpanel <- haplomat
-#   tmap <- mapdat
-#   
-#   cutoff_seq <- 5*10^-(1:3)
-#   tRsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
-# 
-#   # tRsigl <-purrr::map(cutoff_seq,calcLD,hmata=Hpanel,mapa=tmap,m=m,Ne=Ne)
-#   # tRsigQD <-purrr::transpose(purrr::map(cutoff_seq,purrr::compose(eigen,purrr::partial(calcLD,hmata=Hpanel,mapa=tmap,m=m,Ne=Ne))))
-#   # purrr::map_dbl(tRsigl[["values"]],compose(sum,log))
-#   theta <- calc_theta(m = m)
-#   ldp <- c(m,Ne,cutoff,theta)
-#   p <- ncol(Hpanel)
-#   chunkp <- as.integer(c(0,0,p))
-#   dRsig <- calcLD_par(hmat = Hpanel,map = tmap,ldparams = ldp,id = chunkp)
-#   
-#   expect_equal(tRsig,dRsig)
-# })
+test_that("HDF5 backed data with one chunk",{
+  
+  
+  library(LDshrink)
+  library(EigenH5)
+  m=85
+  Ne=1490.672741
+  cutoff=1e-3
+  data("haplomat")
+  data("mapdat")
+  Hpanel <- haplomat
+  tmap <- mapdat
+  
+  
+  p <- ncol(Hpanel)
+  
+  
+  tfa <- tempfile()
+  tfo <- tempfile()
+  EigenH5::write_matrix_h5(tfa,"/","dosage",Hpanel)
+  #EigenH5::write_vector_h5(tfa,"SNPinfo","map",tmap)
+  # ld_reg <- c(rep(1,p/2),rep(2,p/2))
+  EigenH5::write_vector_h5(tfa,"SNPinfo","map",tmap)
+  dosage_input_dff <- tibble::data_frame(filenames=tfa,groupnames="/",datanames="dosage",chunk_group=1L)
+  map_input_dff <- tibble::data_frame(filenames=tfa,groupnames="SNPinfo",datanames="map",chunk_group=1L)
+  input_ff <- rbind(map_input_dff,dosage_input_dff)
+  
+  R_ff <- tibble::data_frame(
+    filenames=c(tfo),
+    groupnames=c("R/1","Q/1","D/1","L2/1"),
+    datanames=c("R","Q","D","L2"),
+    row_chunksizes=c(p,p,p,p),
+    col_chunksizes=c(p,p,1,1),
+    row_c_chunksizes=c(p,p,1,1),
+    col_c_chunksizes=c(p,p,1,1),datatypes="numeric",chunk_group=1L)
+  create_mat_l(R_ff)
+  
+  
+  calc_LD_chunk_h5(input_ff,R_ff,m=m,Ne=Ne,cutoff=cutoff,SNPfirst=F)
+  nS <- EigenH5::read_mat_h5(tfo,"R/1","R")
+  rR <- calcLD(Hpanel,tmap,m,Ne,cutoff)
+  testthat::expect_equal(nS,rR)
+ 
+  evdR <- eigen(nS)
+  nD <- EigenH5::read_vector_h5(tfo,"D/1","D")
+  expect_equal(evdR$values,nD)
+  
+  nQ <- EigenH5::read_mat_h5(tfo,"Q/1","Q")
+  nnS <- nQ%*%diag(nD)%*%t(nQ)
+  expect_equal(nnS,nS)  
 
+})
+
+
+
+test_that("HDF5 backed data with 2 chunks",{
+  
+  
+  library(LDshrink)
+  library(EigenH5)
+  m=85
+  Ne=1490.672741
+  cutoff=1e-3
+  data("haplomat")
+  data("mapdat")
+  Hpanel <- haplomat
+  tmap <- mapdat
+  
+  
+  p <- ncol(Hpanel)
+  
+  
+  tfa <- tempfile()
+  tfo <- tempfile()
+  EigenH5::write_matrix_h5(tfa,"/","dosage",Hpanel)
+  #EigenH5::write_vector_h5(tfa,"SNPinfo","map",tmap)
+  # ld_reg <- c(rep(1,p/2),rep(2,p/2))
+  EigenH5::write_vector_h5(tfa,"SNPinfo","map",tmap)
+  dosage_input_dff <- tibble::data_frame(filenames=tfa,groupnames="/",datanames="dosage",chunk_group=1L)
+  map_input_dff <- tibble::data_frame(filenames=tfa,groupnames="SNPinfo",datanames="map",chunk_group=1L)
+  input_ff <- rbind(map_input_dff,dosage_input_dff)
+  
+  R_ff <- tibble::data_frame(
+    filenames=c(tfo),
+    groupnames=c("R/1","Q/1","D/1","L2/1"),
+    datanames=c("R","Q","D","L2"),
+    row_chunksizes=c(p,p,p,p),
+    col_chunksizes=c(p,p,1,1),
+    row_c_chunksizes=c(p,p,1,1),
+    col_c_chunksizes=c(p,p,1,1),datatypes="numeric",chunk_group=1L)
+  create_mat_l(R_ff)
+  
+  
+  calc_LD_chunk_h5(input_ff,R_ff,m=m,Ne=Ne,cutoff=cutoff,SNPfirst=F)
+  nS <- EigenH5::read_mat_h5(tfo,"R/1","R")
+  rR <- calcLD(Hpanel,tmap,m,Ne,cutoff)
+  testthat::expect_equal(nS,rR)
+  
+  evdR <- eigen(nS)
+  nD <- EigenH5::read_vector_h5(tfo,"D/1","D")
+  expect_equal(evdR$values,nD)
+  
+  nQ <- EigenH5::read_mat_h5(tfo,"Q/1","Q")
+  nnS <- nQ%*%diag(nD)%*%t(nQ)
+  expect_equal(nnS,nS)  
+  
+})
 
 # test_that("off-diagonal LD blocks can be calculated",{
 #   
@@ -164,16 +251,6 @@ test_that("diagonal LD blocks can be calculated",{
   tRsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
   nRsig <- calcLD_prel(Hpanel,tmap,m,Ne,cutoff)
   expect_equal(nRsig,tRsig)
-  # theta <- calc_theta(m = m)
-  # ldp <- c(m,Ne,cutoff,theta)
-  # p <- ncol(Hpanel)
-  # csize <- as.integer(p/2)
-  # chunkp <- as.integer(c(1L,1L,csize))
-  # dRsig <- calcLD_par(hmat = Hpanel,map = tmap,ldparams = ldp,id = chunkp)
-  # # Rsig[lower.tri(Rsig)] <- 0
-  # 
-  # expect_equal(tRsig[501:1000,501:1000],dRsig)
-  # 
 })
 
 test_that("Cov2cor_p works as expected",{

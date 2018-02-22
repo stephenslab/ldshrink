@@ -86,32 +86,29 @@ test_that("LD shrinkage estimators results are approximately equal betweeen hapl
 
 
 
-# 
-# test_that("LD shrinkage estimators work the same real data ",{
-#   
-#   m=85
-#   Ne=1490.672741
-#   cutoff=1e-3
-#   data("haplomat")
-#   data("mapdat")
-#   Hpanel <- haplomat
-#   tmap <- mapdat
-#   
-#   
-#   mdir <- system.file("m_files",package="RSSReQTL")  
-#   #change to the directory with the .m files in Octave
-#   library(RcppOctave)
-#   .CallOctave('cd',mdir)
-#   msig <- .CallOctave('shrink_cov',m,Ne,tmap,Hpanel,cutoff)
-#   Rmsig <- cov2cor(msig)
-#   Rsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
-#   evdRsig <- eigen(Rsig)
-#   evdmsig <- eigen(Rmsig)
-#   min(evdmsig$values)
-#   min(evdRsig$values)
-#   which(abs(Rsig-Rmsig)==max(abs(Rsig-Rmsig)),arr.ind = T)
-#     expect_equal(Rsig,Rmsig)
-# })
+
+test_that("LD shrinkage estimators work the same real data ",{
+
+  m=85
+  Ne=1490.672741
+  cutoff=1e-3
+  data("haplomat")
+  data("mapdat")
+  Hpanel <- haplomat
+  tmap <- mapdat
+
+
+  mdir <- system.file("m_files",package="RSSReQTL")
+  #change to the directory with the .m files in Octave
+  library(RcppOctave)
+  .CallOctave('cd',mdir)
+  msig <- .CallOctave('shrink_cov',m,Ne,tmap,Hpanel,cutoff)
+  Rmsig <- cov2cor(msig)
+  Rsig <- calcLD(hmata = Hpanel,mapa = tmap,m = m,Ne = Ne,cutoff = cutoff)
+  tR <- cov2cor(tRsig$SigHat)
+  expect_equal(Rsig,Rmsig)
+
+})
 
 
 
