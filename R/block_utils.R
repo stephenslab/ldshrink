@@ -124,3 +124,118 @@ filter_pvv <- function(D_df,pvv=1){
 }
 
 
+
+
+chunkwise_LDshrink_h5 <- function(input_file,
+                                  output_file,
+                                  snp_df,
+                                  m=85,
+                                  Ne=11490.672741,
+                                  cutoff=1e-3,
+                                  evd=T,
+                                  svd=T,
+                                  df=F,
+                                  r2cutoff=0.01){
+  
+  stopifnot(file.exists(input_file),
+            !file.exists(output_file),
+            !is.null(snp_df[["region_id"]]),
+            !is.null(snp_df[["map"]]))
+  if(is.null(snp_df[["snp_id"]])){
+    snp_df <- dplyr::mutate(snp_df,snp_id=1:n())
+  }
+  p <- nrow(snp_df)
+  
+  dosage_dims <-EigenH5::get_dims_h5(input_file,"/","dosage")
+  pm <- dosage_dims-p
+  stopifnot(!all(pm<0))
+  SNPfirst <-  which.min(abs(pm))==1
+  mapf <- tempfile()
+  EigenH5::write_vector_h5(filename = mapf,groupname = "SNPinfo",dataname = "map",data = snp_df$map)
+  # EigenH5::write_vector_h5(filename = mapf,groupname = "SNPinfo",dataname = "SNP",data = snp_df$SNP)
+  
+  snp_df <- dplyr::mutate(snp_df,ld_snp_id=1:n())
+  
+  input_dff <- EigenH5::split_chunk_df(snp_df,pos_id=snp_id,group_id=region_id) %>% dplyr::mutate(chunk_group=region_id) %>% dplyr::filter(!is.na(chunk_group))
+  map_dff <- EigenH5::split_chunk_df(snp_df,pos_id=ld_snp_id,group_id=region_id) %>% dplyr::mutate(chunk_group=region_id) %>% dplyr::filter(!is.na(chunk_group))
+  map_dff <- dplyr::mutate(map_dff,filenames=mapf,groupnames="SNPinfo",datanames="map") %>% dplyr::mutate(col_offsets=0L,col_chunksizes=1L)
+  data_dff <- dplyr::mutate(input_dff,filenames=input_file,groupnames="/",datanames="dosage")
+  SNP_dff <-  dplyr::mutate(input_dff,filenames=input_file,groupnames="SNPinfo",datanames="SNP",col_offsets=0L,col_chunksizes=1L)
+  
+  EigenH5::write_df_h5(df=snp_df,groupname = "LDinfo",outfile = output_file)
+  
+  if(SNPfirst){
+    data_dff <- data_dff%>% dplyr::select(-dplyr::starts_with("col_"))
+  }else{
+    data_dff <- data_dff%>% dplyr::select(-dplyr::starts_with("row_"))
+  }
+  
+  in_dff <- dplyr::bind_rows(map_dff,data_dff)
+  in_dff <- dplyr::mutate(in_dff,row_offsets=0L,row_chunksizes=-1L)
+  in_dff <- dplyr::bind_rows(in_dff,SNP_dff)
+  
+  output_dff <-dplyr::mutate(input_dff,create_dynamic=F,row_offsets=0L,col_offsets=0L,row_c_chunksizes=row_chunksizes,col_c_chunksizes=col_chunksizes,datatypes="numeric")
+  R_dff <- dplyr::mutate(output_dff,filenames=output_file,groupnames=paste0("LD/",region_id),datanames="R")
+  L2_dff <- dplyr::mutate(output_dff,filenames=output_file,groupnames=paste0("L2/",region_id),datanames="L2",col_chunksizes=1L,col_c_chunksizes=1L)
+  Q_dff <- dplyr::filter(output_dff,evd) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("EVD/",region_id),datanames="Q")
+  D_dff <- dplyr::filter(output_dff,evd) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("EVD/",region_id),datanames="D",col_chunksizes=1L,col_c_chunksizes=1L)
+  
+
+  rowsnp_dff <- dplyr::filter(output_dff,df) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("LD_DF/",region_id,"/LD"),
+                                                               datanames="rowSNP",
+                                                               col_chunksizes=1L,
+                                                               col_c_chunksizes=1L,
+                                                               create_dynamic=T)
+  colsnp_dff <- dplyr::filter(output_dff,df) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("LD_DF/",region_id,"/LD"),
+                                                               datanames="colSNP",
+                                                               col_chunksizes=1L,
+                                                               col_c_chunksizes=1L,
+                                                               create_dynamic=T)
+  r2_dff <- dplyr::filter(output_dff,df) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("LD_DF/",region_id,"/LD"),
+                                                           datanames="r2",
+                                                           col_chunksizes=1L,
+                                                           col_c_chunksizes=1L,
+                                                           create_dynamic=T)
+  
+  out_data_dff <- dplyr::bind_rows(R_dff,L2_dff,Q_dff,D_dff,rowsnp_dff,colsnp_dff,r2_dff)
+
+  
+  dplyr::filter(out_data_dff,!create_dynamic) %>% EigenH5::create_mat_l()
+  
+  
+  
+  calc_LD_chunk_h5(input_dff = in_dff,output_dff = out_data_dff,m=m,Ne=Ne,cutoff=cutoff,SNPfirst=SNPfirst,evd=evd,df=df,r2cutoff=r2cutoff)
+  if(svd){
+    run_svd <-function(filenames,groupnames,datanames,chunk_group,row_offsets=0,col_offsets=0,col_chunksizes=NULL,row_chunksizes=NULL,...){
+      tX <- EigenH5::read_mat_h5(filenames,
+                                 groupnames,
+                                 datanames,
+                                 offset_rows = row_offsets,
+                                 offset_col=col_offsets,
+                                 chunksize_rows=row_chunksizes,
+                                 chunksize_cols=col_chunksizes)
+      if(SNPfirst){
+        tX <- t(tX)
+      }
+      tX <- scale(tX,center=T,scale=T)
+      tp <- ncol(tX)
+      svdR <- svd(tX)
+      # if(tp<=3){
+      #   svdR <- svd(tX)
+      # }else{
+      #   svdR <-RSpectra::svds(tX,k=tp,nu=0,nv=tp)
+      # }
+      EigenH5::write_vector_h5(filename = output_file,groupname = paste0("SVD/",chunk_group),dataname="d",svdR$d)
+      EigenH5::write_matrix_h5(filename = output_file,groupname = paste0("SVD/",chunk_group),dataname="V",svdR$v)
+      return(T)
+    }
+    trun_svd <- purrr::lift_dl(run_svd)
+    dplyr::rowwise(data_dff) %>% dplyr::do(tibble::data_frame(res=trun_svd(.)))
+  }
+}
+
+
+
+
+
+

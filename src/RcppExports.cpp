@@ -88,8 +88,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // calc_LD_chunk_h5
-void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff, const Rcpp::DataFrame output_dff, const double m, const double Ne, const double cutoff, const bool SNPfirst, const bool evd);
-RcppExport SEXP _LDshrink_calc_LD_chunk_h5(SEXP input_dffSEXP, SEXP output_dffSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP SNPfirstSEXP, SEXP evdSEXP) {
+void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff, const Rcpp::DataFrame output_dff, const double m, const double Ne, const double cutoff, const bool SNPfirst, const bool evd, const bool df, const double r2cutoff);
+RcppExport SEXP _LDshrink_calc_LD_chunk_h5(SEXP input_dffSEXP, SEXP output_dffSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP SNPfirstSEXP, SEXP evdSEXP, SEXP dfSEXP, SEXP r2cutoffSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::DataFrame >::type input_dff(input_dffSEXP);
@@ -99,7 +99,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
     Rcpp::traits::input_parameter< const bool >::type SNPfirst(SNPfirstSEXP);
     Rcpp::traits::input_parameter< const bool >::type evd(evdSEXP);
-    calc_LD_chunk_h5(input_dff, output_dff, m, Ne, cutoff, SNPfirst, evd);
+    Rcpp::traits::input_parameter< const bool >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
+    calc_LD_chunk_h5(input_dff, output_dff, m, Ne, cutoff, SNPfirst, evd, df, r2cutoff);
     return R_NilValue;
 END_RCPP
 }
@@ -115,15 +117,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // ld2df
-Rcpp::DataFrame ld2df(const Matrix_external ldmat, Rcpp::StringVector rsid, const double r2cutoff);
-RcppExport SEXP _LDshrink_ld2df(SEXP ldmatSEXP, SEXP rsidSEXP, SEXP r2cutoffSEXP) {
+Rcpp::DataFrame ld2df(const Eigen::MatrixXd& ldmat, Rcpp::StringVector rsid, const double r2cutoff, const bool stringsAsFactors);
+RcppExport SEXP _LDshrink_ld2df(SEXP ldmatSEXP, SEXP rsidSEXP, SEXP r2cutoffSEXP, SEXP stringsAsFactorsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Matrix_external >::type ldmat(ldmatSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type ldmat(ldmatSEXP);
     Rcpp::traits::input_parameter< Rcpp::StringVector >::type rsid(rsidSEXP);
     Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df(ldmat, rsid, r2cutoff));
+    Rcpp::traits::input_parameter< const bool >::type stringsAsFactors(stringsAsFactorsSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df(ldmat, rsid, r2cutoff, stringsAsFactors));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -265,9 +268,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_calc_cov_scaled", (DL_FUNC) &_LDshrink_calc_cov_scaled, 2},
     {"_LDshrink_cov_2_cor_exp_p", (DL_FUNC) &_LDshrink_cov_2_cor_exp_p, 3},
     {"_LDshrink_eigen_dist", (DL_FUNC) &_LDshrink_eigen_dist, 2},
-    {"_LDshrink_calc_LD_chunk_h5", (DL_FUNC) &_LDshrink_calc_LD_chunk_h5, 7},
+    {"_LDshrink_calc_LD_chunk_h5", (DL_FUNC) &_LDshrink_calc_LD_chunk_h5, 9},
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
-    {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 3},
+    {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
     {"_LDshrink_cov_mkl", (DL_FUNC) &_LDshrink_cov_mkl, 1},
     {"_LDshrink_calc_cov_exp", (DL_FUNC) &_LDshrink_calc_cov_exp, 1},
     {"_LDshrink_cov_2_cor_exp", (DL_FUNC) &_LDshrink_cov_2_cor_exp, 1},

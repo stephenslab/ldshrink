@@ -23,43 +23,16 @@ double calc_theta_exp(const double m){
 
 
 //' 'Melt' an LD matrix, dropping elements below a given r-square cutoff
-//' @param m a number indicating the size of the panel used to create the genetic map
-//' (if using `1000-genomes-genetic-maps` from europeans, this number is 85)
 //[[Rcpp::export]]
-Rcpp::DataFrame ld2df(const Matrix_external ldmat, Rcpp::StringVector rsid,const double r2cutoff=0.01){
+Rcpp::DataFrame ld2df(const Eigen::MatrixXd &ldmat, Rcpp::StringVector rsid,const double r2cutoff=0.01,const bool stringsAsFactors=false){
   using namespace Rcpp;
-  size_t p=ldmat.rows();
-  if(p!=ldmat.cols()){
-    Rcpp::stop("ldmat is not square!");
-  }
-  if(p!=rsid.size()){
-    Rcpp::stop("rsid must be of length p!");
-  }
-  size_t dfsize = (p*(p-1))/2;
-  std::vector<double>corv;
-  corv.reserve(dfsize);
   std::vector<std::string> rowsnp;
   std::vector<std::string> colsnp;
-  rowsnp.reserve(dfsize);
-  colsnp.reserve(dfsize);
+  std::vector<double>corv;
+  LD2df(ldmat,Rcpp::as<std::vector<std::string> >(rsid),rowsnp,colsnp,corv,r2cutoff,stringsAsFactors);
+  return(DataFrame::create(_["rowsnp"]=wrap(rowsnp),_["colsnp"]=wrap(colsnp),_["r2"]=wrap(corv),_["stringsAsFactors"]=stringsAsFactors));
 
-  // Eigen::ArrayXd corv(dfsize);
-  // Rcpp::StringVector rowsnp(dfsize);
-  // Rcpp::StringVector colsnp(dfsize);
-  // Rcpp::Rcout<<"Generating DataFrame"<<std::endl;
-  size_t k=0;
-  for(int i=0; i<p;i++){
-    for(int j=i+1; j<p;j++ ){
-      double r2=ldmat.coeff(i,j)*ldmat.coeff(i,j);
-      if(r2>r2cutoff){
-        corv.push_back(r2);
-        rowsnp.push_back(as<std::string>(rsid[i]));
-        colsnp.push_back(as<std::string>(rsid[j]));
-      }
-    }
-  }
-  // Rcpp::Rcout<<"Returning DataFrame"<<std::endl;
-  return(DataFrame::create(_["rowsnp"]=wrap(rowsnp),_["colsnp"]=wrap(colsnp),_["r2"]=wrap(corv),_["stringsAsFactors"]=false));
+    
 }
 
 

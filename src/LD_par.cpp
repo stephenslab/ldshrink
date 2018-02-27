@@ -240,27 +240,14 @@ int bsize=mapb.size();
     // }
   }
   
-  
-  
-  // avars=calc_variance(hmata)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-  // bvars=calc_variance(hmatb)*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
-  // if(avars.size()!=mapa.size()){
-  //   Rcpp::stop("avars.size != mapa.size()");
-  // }
-  // if(bvars.size()!=mapb.size()){
-  //   Rcpp::stop("bvars.size != mapb.size()");
-  // }
-  
-  // //       % SigHat is derived from Li and Stephens model (2003)
-  // //         SigHat = (1-theta)^2 * S + 0.5*theta * (1-0.5*theta) * eye(numSNP);
-  // // SigHat = (1-theta)^2 * S + 0.5*theta * (1-0.5*theta) * eye(numSNP);
-  // cov_2_cor_p(SigHat,avars,bvars);
-  // // if(isDiag){
-  // //   SigHat.diagonal().setOnes();
-  // // }
   return(SigHat);
 }
 
+
+
+
+
+  
 typedef tbb::spin_mutex Mutex;
 
 //[[Rcpp::export]]
@@ -270,7 +257,9 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
                       const double Ne,
                       const double cutoff,
                       const bool SNPfirst=true,
-                      const bool evd=true){
+                      const bool evd=true,
+                      const bool df=false,
+                      const double r2cutoff=0.01){
   auto r = register_blosc(nullptr,nullptr);
   // EigenH5::start_blosc();
   using Rowmat=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
@@ -284,6 +273,11 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
   Rowmat S;
   Rowmat Q;
   Rowmat D;
+  std::vector<std::string> rsidv;
+  std::vector<std::string> rowsnp;
+  std::vector<std::string> colsnp;
+  std::vector<double> corv;
+  
   std::vector<double> mapd;
   Rowmat Rsq;
   const size_t num_reg=input_f.chunk_map.size();
@@ -301,6 +295,16 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
     calcLD_pa(H,mapd,S,m,Ne,cutoff);
 
     output_f.write_chunk(chunk_id,"R",S);
+    if(df){
+      input_f.read_chunk_vector(chunk_id,"SNP",rsidv);
+      LD2df(S,rsidv,rowsnp,colsnp,corv,r2cutoff,false);
+      output_f.write_chunk_vector(chunk_id,"rowSNP",rowsnp);
+      output_f.write_chunk_vector(chunk_id,"colSNP",colsnp);
+      output_f.write_chunk_vector(chunk_id,"r2",corv);
+      rowsnp.clear();
+      colsnp.clear();
+      corv.clear();
+    }
     if(evd){
       es.compute(S);
       Q=es.eigenvectors().rowwise().reverse();
@@ -315,6 +319,7 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
       output_f.write_chunk(chunk_id,"Q",Q);
       output_f.write_chunk(chunk_id,"D",D);
     }
+
 
     Rsq=S.array().square().colwise().sum()-1;
     output_f.write_chunk(chunk_id,"L2",Rsq);

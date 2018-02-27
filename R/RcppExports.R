@@ -17,8 +17,8 @@ eigen_dist <- function(mapa, mapb) {
     .Call('_LDshrink_eigen_dist', PACKAGE = 'LDshrink', mapa, mapb)
 }
 
-calc_LD_chunk_h5 <- function(input_dff, output_dff, m, Ne, cutoff, SNPfirst = TRUE, evd = TRUE) {
-    invisible(.Call('_LDshrink_calc_LD_chunk_h5', PACKAGE = 'LDshrink', input_dff, output_dff, m, Ne, cutoff, SNPfirst, evd))
+calc_LD_chunk_h5 <- function(input_dff, output_dff, m, Ne, cutoff, SNPfirst = TRUE, evd = TRUE, df = FALSE, r2cutoff = 0.01) {
+    invisible(.Call('_LDshrink_calc_LD_chunk_h5', PACKAGE = 'LDshrink', input_dff, output_dff, m, Ne, cutoff, SNPfirst, evd, df, r2cutoff))
 }
 
 #' Calculate the constant theta, given `m`
@@ -29,10 +29,8 @@ calc_theta <- function(m) {
 }
 
 #' 'Melt' an LD matrix, dropping elements below a given r-square cutoff
-#' @param m a number indicating the size of the panel used to create the genetic map
-#' (if using `1000-genomes-genetic-maps` from europeans, this number is 85)
-ld2df <- function(ldmat, rsid, r2cutoff = 0.01) {
-    .Call('_LDshrink_ld2df', PACKAGE = 'LDshrink', ldmat, rsid, r2cutoff)
+ld2df <- function(ldmat, rsid, r2cutoff = 0.01, stringsAsFactors = FALSE) {
+    .Call('_LDshrink_ld2df', PACKAGE = 'LDshrink', ldmat, rsid, r2cutoff, stringsAsFactors)
 }
 
 cov_mkl <- function(X) {

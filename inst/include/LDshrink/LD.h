@@ -92,6 +92,44 @@ void calcLD_pa(Eigen::MatrixBase<Derived> &hmata,
  // return(SigHat);
 }
 
+template<typename Derived>
+void LD2df(const Eigen::MatrixBase<Derived> &ldmat,
+           const std::vector<std::string> &rsid,
+           std::vector<std::string> &rowsnp,
+           std::vector<std::string> &colsnp,
+           std::vector<double> &corv,
+           const double r2cutoff=0.01,const bool stringsAsFactors=false){
+  size_t p=ldmat.rows();
+  if(p!=ldmat.cols()){
+    Rcpp::stop("ldmat is not square!");
+  }
+  if(p!=rsid.size()){
+    Rcpp::stop("rsid must be of length p!");
+  }
+  size_t dfsize = (p*(p-1))/2;
+  if(corv.capacity()<dfsize){
+    corv.reserve(dfsize);
+  }
+  if(rowsnp.capacity()<dfsize){
+    rowsnp.reserve(dfsize);
+  }
+  if(colsnp.capacity()<dfsize){
+    colsnp.reserve(dfsize);
+  }
+  
+  
+  size_t k=0;
+  for(int i=0; i<p;i++){
+    for(int j=i+1; j<p;j++ ){
+      const double r2=ldmat.coeff(i,j)*ldmat.coeff(i,j);
+      if(r2>r2cutoff){
+        corv.push_back(r2);
+        rowsnp.push_back(rsid[i]);
+        colsnp.push_back(rsid[j]);
+      }
+    }
+  }
+}
 
 
 
