@@ -277,7 +277,6 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
   std::vector<std::string> rowsnp;
   std::vector<std::string> colsnp;
   std::vector<double> corv;
-  
   std::vector<double> mapd;
   Rowmat Rsq;
   const size_t num_reg=input_f.chunk_map.size();
@@ -285,6 +284,8 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
 
   for(auto m_it=input_f.chunk_map.begin();m_it!=input_f.chunk_map.end();m_it++){
     int chunk_id = m_it->first;
+    if (Progress::check_abort() )
+      Rcpp::stop("Process Aborted!");
     input_f.read_chunk(chunk_id,"dosage",H);
     if(SNPfirst){
       H.transposeInPlace();
@@ -297,7 +298,7 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
     output_f.write_chunk(chunk_id,"R",S);
     if(df){
       input_f.read_chunk_vector(chunk_id,"SNP",rsidv);
-      LD2df(S,rsidv,rowsnp,colsnp,corv,r2cutoff,false);
+      LD2df(S,rsidv,rowsnp,colsnp,corv,r2cutoff);
       output_f.write_chunk_vector(chunk_id,"rowSNP",rowsnp);
       output_f.write_chunk_vector(chunk_id,"colSNP",colsnp);
       output_f.write_chunk_vector(chunk_id,"r2",corv);
@@ -327,145 +328,3 @@ void calc_LD_chunk_h5(const Rcpp::DataFrame input_dff ,
   }
 
 }
-  
-
-
-// 
-// 
-// void calc_ld_h5_exp(const std::string input_file,
-//                     const std::string output_file,
-// 		    const std::vector<int> &ld_region,
-// 		    const std::vector<double> &mapd,
-//                     const double m,
-// 		    const double Ne,
-// 		    const double cutoff,
-// 		    const bool SNPfirst=true){
-// 
-//   using namespace HighFive;
-//   using Rowmat=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
-//   auto Xf=File(input_file,File::ReadOnly);
-//   auto Sf=File(output_file,File::ReadWrite|File::Create);
-//   
-//   auto Xd=Xf.getDataSet("dosage");
-//   auto X_dim = Xd.getDataDimensions();
-//   const size_t N= SNPfirst ? X_dim[1] : X_dim[0];
-//   const size_t p=SNPfirst ? X_dim[0] : X_dim[1];
-//   
-//   //  auto Md=Xf.getGroup("SNPinfo").getDataSet("map");
-//   auto r = register_blosc(nullptr,nullptr);
-//   //  std::vector<int> ld_region;
-//   //  Xf.getGroup("SNPinfo").getDataSet("region_id").read(ld_region);
-//   if(ld_region.size()!=p){
-//     Rcpp::Rcerr<<"Size of ld_region: "<<ld_region.size()<<std::endl;
-//     Rcpp::Rcerr<<"SNPs in dosage: "<<p<<std::endl;
-//     Rcpp::stop("size of SNPinfo/region_ids is not equal to number of SNPs in dosage");
-//   }
-//   
-//   
-//   using namespace ranges;
-//   //iterator_range<Rcpp::IntegerVector::iterator> ld_r {ld_region.begin(),ld_region.end()};
-//   //std::vector<int> ld_r(ld_region.begin(),ld_region.end());
-//   Mutex mutex;
-//   Eigen::SelfAdjointEigenSolver<Rowmat> es;
-//   auto ldshrink_lambda_evd = [&](const std::string& sgname,const size_t begin, const size_t chunk_size){
-//     std::vector<double> tmap(chunk_size);
-//     std::copy_n(mapd.begin()+begin,chunk_size,tmap.begin());
-//     Rowmat X;
-//     Rowmat S(chunk_size,chunk_size);
-//     {
-//       // tbb::spin_mutex::scoped_lock lock(mutex);
-//       // //Rcpp::Rcout<<"Reading SNP"<<std::endl;
-//       if(SNPfirst){
-//         Xd.selectEigen({begin,0},{chunk_size,N},{}).read(X);
-//         X.transposeInPlace();
-//       }else{
-//         Xd.selectEigen({0,begin},{N,chunk_size},{}).read(X);
-//       }
-//       //      Md.select({begin},{chunk_size},{}).read(map);
-//     }
-//     //Rcpp::Rcout<<"Computing R"<<std::endl;
-//     
-//     calcLD_pa(X,tmap,S,m,Ne,cutoff);
-//     
-//     Eigen::VectorXd Rsq=S.array().square().colwise().sum()-1;
-//     {      
-//       // tbb::spin_mutex::scoped_lock lock(mutex);
-//       //Rcpp::Rcout<<"Writing R"<<std::endl;
-//       Sf.getGroup("LD").getGroup(sgname).getDataSet("R").write(S);
-//     }
-//     
-//     //Eigen::EigenSolver<Rowmat> es;
-//     //Rcpp::Rcout<<"Computing Q"<<std::endl;
-//     
-//     es.compute(S);
-//     Rowmat Q=es.eigenvectors().rowwise().reverse();
-//     Eigen::VectorXd D=es.eigenvalues().reverse();
-//     Eigen::Index d_idx=0;
-//     double Dmin= D.minCoeff(&d_idx);
-//     if(Dmin<=0){
-//       Rcpp::Rcerr<<"In ld_region "<<sgname<<"from "<<begin<<"to "<<begin+chunk_size+1<<std::endl;
-//       Rcpp::Rcerr<<"Encountered non-positive eigenvalue: "<<Dmin<<" at index: "<<d_idx<<std::endl;
-//       Rcpp::stop("Min of eigenvalue must be positive");
-//     }
-//     {      
-//       // tbb::spin_mutex::scoped_lock lock(mutex);
-//       //Rcpp::Rcout<<"Writing Q"<<std::endl;
-//       
-//       Sf.getGroup("EVD").createOrGetGroup(sgname).getDataSet("Q").write(Q);
-//       Sf.getGroup("EVD").createOrGetGroup(sgname).getDataSet("D").write(D);
-//       Sf.getGroup("LDSC").createOrGetGroup(sgname).getDataSet("L2").write(Rsq);
-//     }
-//     
-//     
-//   };
-//   
-//   auto rng= view::zip(view::ints(0),ld_region) | view::group_by([](auto a, auto b) {
-//       return std::get<1>(a) == std::get<1>(b);});
-//   
-//   const size_t num_reg = distance(rng);
-// 
-//   Rcpp::Rcout<<"Allocating data on disk"<<std::endl;
-//   ranges::for_each(rng,[&](auto r){
-//     auto first_el=ranges::index(r,0);
-//     const size_t offset = static_cast<size_t>(std::get<0>(first_el));
-//     const int tld_region = std::get<1>(first_el);
-//     if(!Rcpp::IntegerVector::is_na(tld_region)){
-//       const size_t chunksize = distance(r);
-//       {
-//         tbb::spin_mutex::scoped_lock lock(mutex);
-//         Filter filter({chunksize,chunksize},FILTER_BLOSC,1);
-//         Filter filterd({chunksize},FILTER_BLOSC,1);
-//         
-//         std::string sgname= std::to_string(tld_region);
-//         Sf.createOrGetGroup("LD").createOrGetGroup(sgname).createDataSet("R",DataSpace({chunksize,chunksize}),AtomicType<double>(),filter.getId(),false);
-//         Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("Q",DataSpace({chunksize,chunksize}),AtomicType<double>(),filter.getId(),false);
-//         Sf.createOrGetGroup("EVD").createOrGetGroup(sgname).createDataSet("D",DataSpace(chunksize),AtomicType<double>(),filterd.getId(),false);
-//         Sf.createOrGetGroup("LDSC").createOrGetGroup(sgname).createDataSet("L2",DataSpace(chunksize),AtomicType<double>(),filterd.getId(),false);
-//       }
-//   
-//     }
-//   });
-//   Rcpp::Rcout<<"Starting LDshrink"<<std::endl;
-//   // prog_bar.update(0);
-//   Progress prog_bar(num_reg, true);
-//   ranges::for_each(rng,[&](auto r){
-//     auto first_el=ranges::index(r,0);
-//     const size_t offset = static_cast<size_t>(std::get<0>(first_el));
-//     const int tld_region = std::get<1>(first_el);
-//     if(!Rcpp::IntegerVector::is_na(tld_region)){
-//       const size_t chunksize = distance(r);
-//       ldshrink_lambda_evd(std::to_string(tld_region),offset,chunksize);
-//       prog_bar.increment();
-//     }
-//     });
-// }
-
-
-
-
-
-
-
-
-
-

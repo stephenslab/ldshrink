@@ -152,6 +152,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// calc_cov_s_exp
+Eigen::MatrixXd calc_cov_s_exp(Eigen::MatrixXd& mat);
+RcppExport SEXP _LDshrink_calc_cov_s_exp(SEXP matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd& >::type mat(matSEXP);
+    rcpp_result_gen = Rcpp::wrap(calc_cov_s_exp(mat));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cov_2_cor_exp
 Eigen::MatrixXd cov_2_cor_exp(Eigen::MatrixXd& covmat);
 RcppExport SEXP _LDshrink_cov_2_cor_exp(SEXP covmatSEXP) {
@@ -273,6 +284,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
     {"_LDshrink_cov_mkl", (DL_FUNC) &_LDshrink_cov_mkl, 1},
     {"_LDshrink_calc_cov_exp", (DL_FUNC) &_LDshrink_calc_cov_exp, 1},
+    {"_LDshrink_calc_cov_s_exp", (DL_FUNC) &_LDshrink_calc_cov_s_exp, 1},
     {"_LDshrink_cov_2_cor_exp", (DL_FUNC) &_LDshrink_cov_2_cor_exp, 1},
     {"_LDshrink_calcLD_prel", (DL_FUNC) &_LDshrink_calcLD_prel, 5},
     {"_LDshrink_calcLD", (DL_FUNC) &_LDshrink_calcLD, 5},

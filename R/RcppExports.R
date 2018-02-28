@@ -41,6 +41,10 @@ calc_cov <- function(mat) {
     .Call('_LDshrink_calc_cov_exp', PACKAGE = 'LDshrink', mat)
 }
 
+calc_cov_s <- function(mat) {
+    .Call('_LDshrink_calc_cov_s_exp', PACKAGE = 'LDshrink', mat)
+}
+
 cov_2_cor <- function(covmat) {
     .Call('_LDshrink_cov_2_cor_exp', PACKAGE = 'LDshrink', covmat)
 }

@@ -23,6 +23,13 @@ template<typename DerivedA,typename DerivedB>
    auto centered = mat.rowwise()-mat.colwise().mean();
   S= (((centered.adjoint()*centered)/(mat.rows()-1)));
 }
+template<typename DerivedA,typename DerivedB>
+void calc_cov_s(Eigen::MatrixBase<DerivedA> &mat,Eigen::MatrixBase<DerivedB> &S){
+  auto n = Eigen::nbThreads( );
+  // Rcpp::Rcout<<"Using : "<<n<<" threads"<<std::endl;
+  // mat = mat.rowwise()-mat.colwise().mean();
+  S= (((mat.adjoint()*mat)/(mat.rows()-1)));
+}
 
 
 template<typename Derived,int Flags=Eigen::internal::traits<Derived>::Flags & Eigen::RowMajorBit ? Eigen::RowMajor : Eigen::ColMajor>
@@ -48,7 +55,8 @@ void calcLD_pa(Eigen::MatrixBase<Derived> &hmata,
     //Rcpp::Rcerr<<"LD is being estimated from genotype instead of haplotype"<<std::endl;
   }
   Scalar theta=calc_theta(m);
-  calc_cov(hmata,S);
+  hmata = hmata.rowwise()-hmata.colwise().mean();
+  calc_cov_s(hmata,S);
   if(isGeno){
     S*=0.5;
   }
@@ -98,7 +106,7 @@ void LD2df(const Eigen::MatrixBase<Derived> &ldmat,
            std::vector<std::string> &rowsnp,
            std::vector<std::string> &colsnp,
            std::vector<double> &corv,
-           const double r2cutoff=0.01,const bool stringsAsFactors=false){
+           const double r2cutoff=0.01){
   size_t p=ldmat.rows();
   if(p!=ldmat.cols()){
     Rcpp::stop("ldmat is not square!");

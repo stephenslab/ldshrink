@@ -1,4 +1,3 @@
-#include <range/v3/all.hpp>
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
@@ -29,7 +28,7 @@ Rcpp::DataFrame ld2df(const Eigen::MatrixXd &ldmat, Rcpp::StringVector rsid,cons
   std::vector<std::string> rowsnp;
   std::vector<std::string> colsnp;
   std::vector<double>corv;
-  LD2df(ldmat,Rcpp::as<std::vector<std::string> >(rsid),rowsnp,colsnp,corv,r2cutoff,stringsAsFactors);
+  LD2df(ldmat,Rcpp::as<std::vector<std::string> >(rsid),rowsnp,colsnp,corv,r2cutoff);
   return(DataFrame::create(_["rowsnp"]=wrap(rowsnp),_["colsnp"]=wrap(colsnp),_["r2"]=wrap(corv),_["stringsAsFactors"]=stringsAsFactors));
 
     
@@ -78,7 +77,7 @@ void calc_cov_mkl(Eigen::MatrixXd &X,Eigen::MatrixXd &S,Eigen::ArrayXd &meanv){
   /***** Initialization of the task parameters using FULL_STORAGE
    for covariance/correlation matrices *****/
   errcode = vsldSSEditCovCor( task, mean, (double*)cov, &cov_storage,
-                              NULL, NULL );
+                              0, 0 );
   //CheckVslError(errcode);
   /***** Compute covariance/correlation matrices using FAST method  *****/
   errcode = vsldSSCompute( task,
@@ -109,6 +108,12 @@ Rcpp::NumericMatrix cov_mkl(Eigen::MatrixXd &X){
 Eigen::MatrixXd calc_cov_exp(Eigen::MatrixXd &mat){
   Eigen::MatrixXd S;
   calc_cov(mat,S);
+  return(S);
+}
+//[[Rcpp::export(name="calc_cov_s")]]
+Eigen::MatrixXd calc_cov_s_exp(Eigen::MatrixXd &mat){
+  Eigen::MatrixXd S;
+  calc_cov_s(mat,S);
   return(S);
 }
 

@@ -173,8 +173,11 @@ chunkwise_LDshrink_h5 <- function(input_file,
   in_dff <- dplyr::bind_rows(map_dff,data_dff)
   in_dff <- dplyr::mutate(in_dff,row_offsets=0L,row_chunksizes=-1L)
   in_dff <- dplyr::bind_rows(in_dff,SNP_dff)
-  
-  output_dff <-dplyr::mutate(input_dff,create_dynamic=F,row_offsets=0L,col_offsets=0L,row_c_chunksizes=row_chunksizes,col_c_chunksizes=col_chunksizes,datatypes="numeric")
+  chunksize_max<-1024
+  output_dff <-dplyr::mutate(input_dff,create_dynamic=F,row_offsets=0L,col_offsets=0L,
+                             row_c_chunksizes=pmin(row_chunksizes,chunksize_max),
+                             col_c_chunksizes=pmin(col_chunksizes,chunksize_max),
+                             datatypes="numeric")
   R_dff <- dplyr::mutate(output_dff,filenames=output_file,groupnames=paste0("LD/",region_id),datanames="R")
   L2_dff <- dplyr::mutate(output_dff,filenames=output_file,groupnames=paste0("L2/",region_id),datanames="L2",col_chunksizes=1L,col_c_chunksizes=1L)
   Q_dff <- dplyr::filter(output_dff,evd) %>% dplyr::mutate(filenames=output_file,groupnames=paste0("EVD/",region_id),datanames="Q")
