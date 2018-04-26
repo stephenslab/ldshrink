@@ -2,8 +2,12 @@
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
+
+#include <progress.hpp>
+#include <progress_bar.hpp>
 #include <tuple>
 //[[Rcpp::plugins(cpp14)]]
+// [[Rcpp::depends(RcppProgress)]]
 
 
 
@@ -55,7 +59,9 @@ bool sorted_snp_df(const Rcpp::DataFrame &snp_info){
 
 
 //[[Rcpp::export]]
-Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame &ld_regions, const Rcpp::DataFrame &snp_info,const bool assign_all=true){
+Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame &ld_regions,
+                                  const Rcpp::DataFrame &snp_info,
+                                  const bool assign_all=true){
 
   const Rcpp::IntegerVector ld_chr= ld_regions["chr"];
   const Rcpp::IntegerVector ld_region_id= ld_regions["region_id"];
@@ -120,7 +126,7 @@ Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame &ld_regions, const Rcpp:
 }
 
 //[[Rcpp::export]]
-Rcpp::NumericVector interpolate_map(const Rcpp::NumericVector &map,const Rcpp::IntegerVector map_pos,const Rcpp::IntegerVector target_pos){
+Rcpp::NumericVector interpolate_map(const Rcpp::NumericVector &map,const Rcpp::IntegerVector map_pos,const Rcpp::IntegerVector target_pos,const bool progress=false){
 
   const size_t map_snps=map.size();
   if(map_pos.size()!=map_snps){
@@ -128,7 +134,21 @@ Rcpp::NumericVector interpolate_map(const Rcpp::NumericVector &map,const Rcpp::I
   }
   const size_t t_snps=target_pos.size();
   Rcpp::NumericVector retvec(t_snps);
-
+  if(!std::is_sorted(map.begin(),map.end())){
+    Rcpp::stop("Genetic map must be sorted!");
+  }
+  if(!std::is_sorted(map_pos.begin(),map_pos.end(),[](const int &a, const int &b){
+    return(a<b);
+  })){
+    Rcpp::stop("Reference physical map must be sorted!");
+  }
+  if(!std::is_sorted(target_pos.begin(),target_pos.end(),[](const int &a, const int &b){
+    return(a<b);
+  })){
+    Rcpp::stop("Reference physical map must be sorted!");
+  }
+  
+  Progress prog_bar(t_snps, progress);
   size_t idx2=0;
   size_t idx1=0;
   while(idx1<t_snps){
@@ -137,28 +157,39 @@ Rcpp::NumericVector interpolate_map(const Rcpp::NumericVector &map,const Rcpp::I
     if(pos == mappos){
       retvec[idx1]=map[idx2];
       idx1++;
+      prog_bar.increment();
     }else{
       if(pos<mappos){
         if(idx2==0){
           retvec[idx1]=map[idx2];
+          idx1++;
         }else{
           double prev_map = map[idx2-1];
           double prev_mappos = static_cast<double>(map_pos[idx2-1]);
           double frac = (static_cast<double>(pos)-prev_mappos)/(static_cast<double>(mappos)-prev_mappos);
           retvec[idx1]=prev_map+frac*(map[idx2]-prev_map);
           idx1++;
+          prog_bar.increment();
         }
       }else{
         if(pos>mappos){
           if(idx2==(map_snps-1)){
             retvec[idx1]=map[idx2];
             idx1++;
+            prog_bar.increment();
           }else{
             idx2++;
           }
+        }else{
+          Rcpp::stop("Something has gone wrong");
+        }
         }
       }
     }
-  }
   return(retvec);
 }
+
+
+
+
+

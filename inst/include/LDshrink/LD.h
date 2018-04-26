@@ -1,9 +1,100 @@
 #ifndef LD_H
 #define LD_H
 #include <RcppEigen.h>
-
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#include <memory>
 #include "LDshrink_types.h"
+
+
+
+class IO_h5{
+  friend class MatSlices;
+protected:
+  std::unordered_map<std::string,std::shared_ptr<HighFive::File> >  m_file_map;
+  std::unordered_map<std::string,std::shared_ptr<HighFive::Group> >  m_group_map;
+  std::unordered_map<std::string,std::shared_ptr<HighFive::DataSet> > m_dataset_map;
+public:
+  MatSlices input_f;
+  MatSlices output_f;
+  IO_h5(const Rcpp::DataFrame input_dff,
+       const Rcpp::DataFrame output_dff):m_file_map(),
+       m_group_map(),
+       m_dataset_map(),
+       input_f(input_dff,m_file_map,m_group_map,m_dataset_map,true),
+       output_f(output_dff,m_file_map,m_group_map,m_dataset_map,false){}
+  size_t num_input_groups()const {
+    return(input_f.chunk_map.size());
+  }
+  size_t num_output_groups()const{
+    return(output_f.chunk_map.size());
+  }
+};
+
+
+//class IO_R{
+
+
+
+/* template<typename IOT> */
+/* class LDshrink{ */
+
+
+
+
+/*   /\* std::unordered_map<int,std::shared_future<mmat> > Hmap; *\/ */
+/*   /\* std::unordered_map<int,std::shared_future<mmat> > Smap; *\/ */
+/*   /\* std::unordered_map<int,std::shared_future<mmat> > Dmap; *\/ */
+/*   /\* std::unordered_map<int,std::shared_future<mmat> > Qmap; *\/ */
+/*   mmati iv; */
+/*   IOT io_obj; */
+/*   const size_t num_reg; */
+/*   const double m; */
+/*   const double Ne; */
+/*   const double cutoff; */
+/*   const bool SNPfirst; */
+/*   const bool doEVD; */
+/*   const bool doSVD; */
+/*   const bool doDF; */
+/*   const double r2cutoff; */
+
+
+/*   mmat Rsq; */
+
+
+/*  public: */
+/*  LDshrink(IOT & io_obj_, */
+/* 	  const double m_, */
+/* 	  const double Ne_, */
+/* 	  const double cutoff_, */
+/* 	  const bool SNPfirst_=true, */
+/* 	  const bool doEVD_=false, */
+/* 	  const bool doSVD_=false, */
+/* 	  const bool doDF_=false, */
+/* 	  const double r2cutoff_=0.01):io_obj(io_obj_), */
+/*     num_reg(io_obj.num_input_groups()), */
+/*     m(m_), */
+/*     Ne(Ne_), */
+/*     cutoff(cutoff_), */
+/*     SNPfirst(SNPfirst_), */
+/*     doEVD(doEVD_), */
+/*     doSVD(doSVD_), */
+/*     doDF(doDF_), */
+/*     r2cutoff(r2cutoff_), */
+/*     prog_bar(num_reg,true){ */
+
+
+/*   } */
+/*   void calcLD(){ */
+
+
+
+/*   } */
+
+/* }; */
+
+
 
 
 inline double calc_nmsum(const double m){
@@ -19,13 +110,12 @@ inline double calc_theta(const double m){
 }
 
 template<typename DerivedA,typename DerivedB>
-  void calc_cov( Eigen::MatrixBase<DerivedA> &mat,Eigen::MatrixBase<DerivedB> &S){
-   auto centered = mat.rowwise()-mat.colwise().mean();
-  S= (((centered.adjoint()*centered)/(mat.rows()-1)));
+  void calc_cov( Eigen::MatrixBase<DerivedA> mat,Eigen::MatrixBase<DerivedB> &S){
+    mat = mat.rowwise()-mat.colwise().mean();
+  S= (((mat.adjoint()*mat)/(mat.rows()-1)));
 }
 template<typename DerivedA,typename DerivedB>
 void calc_cov_s(Eigen::MatrixBase<DerivedA> &mat,Eigen::MatrixBase<DerivedB> &S){
-  auto n = Eigen::nbThreads( );
   // Rcpp::Rcout<<"Using : "<<n<<" threads"<<std::endl;
   // mat = mat.rowwise()-mat.colwise().mean();
   S= (((mat.adjoint()*mat)/(mat.rows()-1)));
@@ -41,64 +131,122 @@ void cov_2_cor(Eigen::MatrixBase<Derived> &covmat){
   covmat.diagonal().setOnes();
 }
 
-template<typename Derived,int Flags=Eigen::internal::traits<Derived>::Flags & Eigen::RowMajorBit ? Eigen::RowMajor : Eigen::ColMajor>
-void calcLD_pa(Eigen::MatrixBase<Derived> &hmata,
-               const std::vector<typename Derived::Scalar> &mapa,
-               Eigen::MatrixBase<Derived> &S,
-               const  typename Derived::Scalar m,
-               const typename Derived::Scalar Ne,
-               const typename Derived::Scalar cutoff){
-  typedef typename Derived::Scalar Scalar;
-  Scalar dosage_max=hmata.maxCoeff();
-  bool isGeno=dosage_max>1;
-  if(isGeno){
-    //Rcpp::Rcerr<<"LD is being estimated from genotype instead of haplotype"<<std::endl;
-  }
-  Scalar theta=calc_theta(m);
-  hmata = hmata.rowwise()-hmata.colwise().mean();
-  calc_cov_s(hmata,S);
-  if(isGeno){
-    S*=0.5;
-  }
-  int numSNP=S.rows();
-  auto nts=S.template triangularView<Eigen::StrictlyLower>().setZero();
 
-  if(!is_sorted(mapa.begin(),mapa.end(),std::less<Scalar>())){
-    Rcpp::stop("Recombination map must be non-decreasing\n");
-  }
-  Scalar tj=0;
-  Scalar ti=0;
-  Scalar rho=0;
-  Scalar tshrinkage;
 
-  for(int i=0; i<numSNP;i++){
-    ti=mapa[i];
-    for(int j=i+1; j<numSNP;j++){
-      tj=mapa[j];
-      rho = 4*Ne*(tj-ti)/100;
-      rho=-rho/(2*m);
-      tshrinkage=std::exp(rho);
-      if(tshrinkage<cutoff){
-        tshrinkage=0;
-      }
-      S(i,j)=tshrinkage*S(i,j);
+template<typename T>
+class LDshrinker{
+  std::vector<T> Sdat;
+public:
+  const T m;
+  const T Ne;
+  const T theta;
+  const T cutoff;
+  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > S;
+  Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > mapd;
+  //  const size_t N;
+  LDshrinker(const T m_,const T Ne_,const T cutoff_):m(m_),
+						   theta(calc_theta(m)),
+						   cutoff(cutoff_),
+						     Ne(Ne_),
+						     mapd(nullptr,1),
+						     S(nullptr,1,1)
+  {}
+  LDshrinker(const T m_,const T Ne_,const T cutoff_,
+	     Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> &hmat_,
+	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > &map_):m(m_),
+									theta(calc_theta(m)),
+									cutoff(cutoff_),
+									Ne(Ne_),
+									mapd(map_.data(),map_.size()),
+  									S(nullptr,map_.size(),map_.size()){
+    if(!is_sorted(mapd.data(),mapd.data()+mapd.size(),std::less<T>())){
+      Rcpp::stop("Recombination map must be non-decreasing\n");
+    }
+    const size_t p=mapd.size();
+    if(hmat_.cols()!=p){
+      Rcpp::stop("Reference panel data matrix must have column number equal to the size of genetic map");
+    }
+    Sdat.resize(p*p);
+    S=Eigen::Map<Eigen::Array<T,Eigen::Dynamic,Eigen::Dynamic> >(Sdat.data(),p,p);
+    S=calc_cov(hmat_);
+  }
+
+  LDshrinker(const T m_,const T Ne_,const T cutoff_,
+	     Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &hmat_,
+	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > &map_):m(m_),
+									theta(calc_theta(m)),
+									cutoff(cutoff_),
+									Ne(Ne_),
+									mapd(map_.data(),map_.size()),
+									S(nullptr,map_.size(),map_.size())
+  {
+    if(!is_sorted(mapd.data(),mapd.data()+mapd.size(),std::less<T>())){
+      Rcpp::stop("Recombination map must be non-decreasing\n");
+    }
+    const size_t p=mapd.size();
+    if(hmat_.cols()!=p){
+      Rcpp::stop("Reference panel data matrix must have column number equal to the size of genetic map");
+    }
+    Sdat.resize(p*p);
+    S=Eigen::Map<Eigen::Array<T,Eigen::Dynamic,Eigen::Dynamic> >(Sdat.data(),p,p);
+    S=calc_cov(hmat_);
+  }
+  
+
+  LDshrinker(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &S_,
+	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> >  &map_,const T m_,const T Ne_,const T cutoff_):m(m_),
+										    theta(calc_theta(m)),
+										    cutoff(cutoff_),
+										    Ne(Ne_),
+										    mapd(map_.data(),map_.size()),
+										    S(S_.data(),S_.rows(),S_.cols())
+  {
+    if(!is_sorted(mapd.data(),mapd.data()+mapd.size(),std::less<T>())){
+      Rcpp::stop("Recombination map must be non-decreasing\n");
+    }
+    const size_t p=mapd.size();
+    if(S.cols()!=p || S.rows()!=p){
+      Rcpp::stop("Covariance Matrix have column(row) number equal to the size of genetic map");
     }
   }
-  // S=S+S.triangularView<Eigen::StrictlyUpper>().transpose();
-  S.template triangularView<Eigen::StrictlyLower>()=S.transpose();
-  // Eigen::Matrix<Scalar,Eigen::Dynamic,1,Flags> eyem(numSNP);
 
-  S = ((1-theta)*(1-theta))*S.array();
-  for(int i=0; i<numSNP;i++){
-    S(i,i)+=0.5*theta * (1-0.5*theta);
+  static auto calc_cov(  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &hmata){
+    T dosage_max=hmata.maxCoeff();
+    bool isGeno=dosage_max>1;
+    const double GenoMult = isGeno ? 0.5 : 1;
+    hmata = hmata.rowwise()-hmata.colwise().mean();
+    return((((hmata.adjoint()*hmata)/(hmata.rows()-1)))*GenoMult);
   }
-  // S.diagonal()+=eyem.asDiagonal();
-  //       % SigHat is derived from Li and Stephens model (2003)
-  //         SigHat = (1-theta)^2 * S + 0.5*theta * (1-0.5*theta) * eye(numSNP);
-  // SigHat = (1-theta)^2 * S + 0.5*theta * (1-0.5*theta) * eye(numSNP);
-  cov_2_cor(S);
- // return(SigHat);
-}
+
+  T shrinkp(const T map_dist){
+    T rho = 4*Ne*(map_dist)/100;
+    rho=-rho/(2*m);
+    rho =std::exp(rho);
+    return(rho<cutoff ? 0 : rho);
+  }
+
+
+  void Shrink(){
+    //    const size_t p=map.size();
+    const int numSNP=mapd.size();
+    T ti=0;
+    T tshrinkage;
+    for(int i=0; i<numSNP;i++){
+      ti=mapd[i];
+      for(int j=i+1; j<numSNP;j++){
+	S(i,j)=S(i,j)*shrinkp(mapd[j]-ti);
+      }
+    }
+
+    S.template triangularView<Eigen::StrictlyLower>()=S.transpose();
+    S = ((1-theta)*(1-theta))*S.array();
+    for(int i=0; i<numSNP;i++){
+      S(i,i)+=0.5*theta * (1-0.5*theta);
+    }
+  }
+
+};
+
 
 template<typename Derived>
 void LD2df(const Eigen::MatrixBase<Derived> &ldmat,

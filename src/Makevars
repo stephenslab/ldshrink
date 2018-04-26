@@ -1,4 +1,4 @@
-CXX_STD = CXX14
+CXX_STD = CXX17
 RHDF5_LIBS=`echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")'|\
     "${R_HOME}/bin/R" --vanilla --slave`
 BLOSC_CFLAGS+=$(shell echo 'libblosc::pkgconfig("PKG_CFLAGS")'|\
@@ -7,8 +7,5 @@ BLOSC_CFLAGS+=$(shell echo 'libblosc::pkgconfig("PKG_CFLAGS")'|\
 PKG_LIBS+=$(shell echo 'libblosc::pkgconfig("PKG_LIBS_static")' |\
 "${R_HOME}/bin/R" --vanilla --slave)
 
-PKG_LIBS += $(RHDF5_LIBS)
-LDFLAGS=-fuse-ld=lld-5.0
-PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
-PKG_LIBS += -L/opt/intel/compilers_and_libraries_2018.0.128/linux/mkl/lib/intel64/ -ltbb -lmkl_rt 
-PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DUSE_EIGEN -DUSE_BLOSC ${BLOSC_CFLAGS} -DH5_USE_EIGEN -I/opt/intel/compilers_and_libraries/linux/mkl/include/ -DUSE_MKL
+PKG_LIBS += $(RHDF5_LIBS) 
+PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DUSE_EIGEN -DUSE_BLOSC ${BLOSC_CFLAGS} -DH5_USE_EIGEN -fopenmp -DUSE_MKL

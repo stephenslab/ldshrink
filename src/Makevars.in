@@ -1,22 +1,4 @@
-#include @EL_PREFIX@/conf/ElVars
-
-#To check if ElVars has the right location
-
-#ifneq (,$(wildcard $(EL_LIB)/libEl* ))#
-#	EL_LIBR=$(EL_LIB)
-#else
-#	ifneq (,$(wildcard $(EL_LIB)64/libEl* ))
-#	  EL_LIBR=$(EL_LIB)64
- # else
-#Go back to the original
- # EL_LIBR=$(EL_LIB)
- # endif
-#endif
-#CC_FLAGS = -std=c99 -O3
-#EL_PATH=-L$(EL_LIBR) -L$(EL_LIBR)/external/pmrrr
-#LINK_FLAGS = $(EL_LINK_FLAGS)
-#PKG_CFLAGS = $(CC_FLAGS)  $(R_INC) @MPI_CFLAGS@ $(ALL_MATH_INC)
-#PKG_LIBS = -L/usr/local/lib/ $(EL_PATH) $(EL_LIBS) 
-
 CXX_STD = CXX11
-PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG 
+PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DEIGEN_USE_LAPACK -DEIGEN_USE_BLAS $(SHLIB_OPENMP_CFLAGS)
+PKG_LIBS =  $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CFLAGS)
+PKG_CFLAGS+= $(SHLIB_OPENMP_CFLAGS)

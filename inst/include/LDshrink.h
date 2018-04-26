@@ -1,7 +1,9 @@
 #ifndef RSSR_EQTL_H
 #define RSSR_EQTL_H
+#define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
 #include <RcppEigen.h>
-
+//#include <unsupported/Eigen/CXX11/Tensor>
+#include "EigenH5.h"
 #include "LDshrink/LDshrink_types.h"
 #include "LDshrink/LD.h"
 #include "LDshrink/LD_p.h"

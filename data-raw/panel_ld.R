@@ -18,6 +18,14 @@ devtools::use_data(break_df)
 liftover_bed <- mutate(liftover_bed,bp=as.numeric(stop-start),ldp=(bp/1000)^2)
 
 
+p <- length(mapdat)
+snp_df <- data_frame(chr=1L,map=mapdat,pos=sort(sample(1:(10*p),p,replace=F)),snp_id=1:p)
+EigenH5::write_matrix_h5("/home/nwknoblauch/Dropbox/projectile/LDshrink/inst/test_gdsf/test_SNP.h5","/","dosage",t(haplomat))
+EigenH5::write_df_h5(snp_df,groupname="SNPinfo","/home/nwknoblauch/Dropbox/projectile/LDshrink/inst/test_gdsf/test_SNP.h5")
+#   data("haplomat")
+#   data("mapdat")
+
+
 # all_ldmats <- sapply(liftover_bed$bp,function(x){matrix(0,x/1000,x/1000)},simplify = F)
 
 liftover_coord <- mutate(liftover_bed,chr=as.integer(gsub("chr","",chr))) %>% gather(start_stop,value,-chr) %>% arrange(chr,value) %>% mutate(pos=1:n())
