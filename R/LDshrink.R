@@ -1,5 +1,4 @@
 
-
 LDshrink <- function(haplo_panel,map_data,m=85,Ne=11490.672741,cutoff=1e-3,isGeno=NA,cov_2_cor=T,na.rm=T){
   if(is.na(isGeno)){
     isGeno <- max(haplo_panel,na.rm = na.rm)>1
