@@ -1,98 +1,10 @@
-#ifndef LD_H
-#define LD_H
+#pragma once
 #include <RcppEigen.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 #include <memory>
-#include "LDshrink_types.h"
-
-
-
-class IO_h5{
-  friend class MatSlices;
-protected:
-  std::unordered_map<std::string,std::shared_ptr<HighFive::File> >  m_file_map;
-  std::unordered_map<std::string,std::shared_ptr<HighFive::Group> >  m_group_map;
-  std::unordered_map<std::string,std::shared_ptr<HighFive::DataSet> > m_dataset_map;
-public:
-  MatSlices input_f;
-  MatSlices output_f;
-  IO_h5(const Rcpp::DataFrame input_dff,
-       const Rcpp::DataFrame output_dff):m_file_map(),
-       m_group_map(),
-       m_dataset_map(),
-       input_f(input_dff,m_file_map,m_group_map,m_dataset_map,true),
-       output_f(output_dff,m_file_map,m_group_map,m_dataset_map,false){}
-  size_t num_input_groups()const {
-    return(input_f.chunk_map.size());
-  }
-  size_t num_output_groups()const{
-    return(output_f.chunk_map.size());
-  }
-};
-
-
-//class IO_R{
-
-
-
-/* template<typename IOT> */
-/* class LDshrink{ */
-
-
-
-
-/*   /\* std::unordered_map<int,std::shared_future<mmat> > Hmap; *\/ */
-/*   /\* std::unordered_map<int,std::shared_future<mmat> > Smap; *\/ */
-/*   /\* std::unordered_map<int,std::shared_future<mmat> > Dmap; *\/ */
-/*   /\* std::unordered_map<int,std::shared_future<mmat> > Qmap; *\/ */
-/*   mmati iv; */
-/*   IOT io_obj; */
-/*   const size_t num_reg; */
-/*   const double m; */
-/*   const double Ne; */
-/*   const double cutoff; */
-/*   const bool SNPfirst; */
-/*   const bool doEVD; */
-/*   const bool doSVD; */
-/*   const bool doDF; */
-/*   const double r2cutoff; */
-
-
-/*   mmat Rsq; */
-
-
-/*  public: */
-/*  LDshrink(IOT & io_obj_, */
-/* 	  const double m_, */
-/* 	  const double Ne_, */
-/* 	  const double cutoff_, */
-/* 	  const bool SNPfirst_=true, */
-/* 	  const bool doEVD_=false, */
-/* 	  const bool doSVD_=false, */
-/* 	  const bool doDF_=false, */
-/* 	  const double r2cutoff_=0.01):io_obj(io_obj_), */
-/*     num_reg(io_obj.num_input_groups()), */
-/*     m(m_), */
-/*     Ne(Ne_), */
-/*     cutoff(cutoff_), */
-/*     SNPfirst(SNPfirst_), */
-/*     doEVD(doEVD_), */
-/*     doSVD(doSVD_), */
-/*     doDF(doDF_), */
-/*     r2cutoff(r2cutoff_), */
-/*     prog_bar(num_reg,true){ */
-
-
-/*   } */
-/*   void calcLD(){ */
-
-
-
-/*   } */
-
-/* }; */
+#include "mapdiff.hpp"
 
 
 
@@ -133,7 +45,7 @@ void cov_2_cor(Eigen::MatrixBase<Derived> &covmat){
 
 
 
-template<typename T>
+template<typename T,int RM=Eigen::ColMajor>
 class LDshrinker{
   std::vector<T> Sdat;
 public:
@@ -141,8 +53,8 @@ public:
   const T Ne;
   const T theta;
   const T cutoff;
-  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > S;
-  Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > mapd;
+  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> > S;
+  Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> > mapd;
   //  const size_t N;
   LDshrinker(const T m_,const T Ne_,const T cutoff_):m(m_),
 						   theta(calc_theta(m)),
@@ -152,8 +64,8 @@ public:
 						     S(nullptr,1,1)
   {}
   LDshrinker(const T m_,const T Ne_,const T cutoff_,
-	     Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> &hmat_,
-	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > &map_):m(m_),
+	     Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> &hmat_,
+	     Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> > &map_):m(m_),
 									theta(calc_theta(m)),
 									cutoff(cutoff_),
 									Ne(Ne_),
@@ -172,8 +84,8 @@ public:
   }
 
   LDshrinker(const T m_,const T Ne_,const T cutoff_,
-	     Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &hmat_,
-	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> > &map_):m(m_),
+	     Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> > &hmat_,
+	     Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> > &map_):m(m_),
 									theta(calc_theta(m)),
 									cutoff(cutoff_),
 									Ne(Ne_),
@@ -193,8 +105,8 @@ public:
   }
   
 
-  LDshrinker(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &S_,
-	     Eigen::Map<const Eigen::Array<T,Eigen::Dynamic,1> >  &map_,const T m_,const T Ne_,const T cutoff_):m(m_),
+  LDshrinker(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> > &S_,
+	     Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> >  &map_,const T m_,const T Ne_,const T cutoff_):m(m_),
 										    theta(calc_theta(m)),
 										    cutoff(cutoff_),
 										    Ne(Ne_),
@@ -210,7 +122,7 @@ public:
     }
   }
 
-  static auto calc_cov(  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &hmata){
+  static auto calc_cov(  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> > &hmata){
     T dosage_max=hmata.maxCoeff();
     bool isGeno=dosage_max>1;
     const double GenoMult = isGeno ? 0.5 : 1;
@@ -244,6 +156,18 @@ public:
       S(i,i)+=0.5*theta * (1-0.5*theta);
     }
   }
+
+
+  // void alt_Shrink(){
+  //   const int numSNP=mapd.size();
+  //   S=S*makeMapDiff(mapd,m,Ne,cutoff);
+  //   S = ((1-theta)*(1-theta))*S.array();
+  //   for(int i=0; i<numSNP;i++){
+  //     S(i,i)+=0.5*theta * (1-0.5*theta);
+  //   }
+  // }
+
+
 
 };
 
@@ -286,7 +210,3 @@ void LD2df(const Eigen::MatrixBase<Derived> &ldmat,
     }
   }
 }
-
-
-
-#endif

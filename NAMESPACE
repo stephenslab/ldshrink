@@ -1,5 +1,6 @@
 useDynLib(LDshrink,.registration=TRUE)
 import(RcppEigen)
 importFrom(Rcpp, evalCpp)
+importFrom("utils", "data", "installed.packages")
 exportPattern("^[[:alpha:]]+")
 importFrom(magrittr,"%>%")

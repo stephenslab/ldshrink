@@ -4,60 +4,9 @@
 #include "../inst/include/LDshrink.h"
 #include <RcppEigen.h>
 #include <Rcpp.h>
-#include <string>
-#include <set>
 
 using namespace Rcpp;
 
-// blosc
-int blosc();
-static SEXP _LDshrink_blosc_try() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    rcpp_result_gen = Rcpp::wrap(blosc());
-    return rcpp_result_gen;
-END_RCPP_RETURN_ERROR
-}
-RcppExport SEXP _LDshrink_blosc() {
-    SEXP rcpp_result_gen;
-    {
-        Rcpp::RNGScope rcpp_rngScope_gen;
-        rcpp_result_gen = PROTECT(_LDshrink_blosc_try());
-    }
-    Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
-    if (rcpp_isInterrupt_gen) {
-        UNPROTECT(1);
-        Rf_onintr();
-    }
-    Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
-    if (rcpp_isError_gen) {
-        SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
-        UNPROTECT(1);
-        Rf_error(CHAR(rcpp_msgSEXP_gen));
-    }
-    UNPROTECT(1);
-    return rcpp_result_gen;
-}
-// setLDshrinkThreads
-void setLDshrinkThreads(int n);
-RcppExport SEXP _LDshrink_setLDshrinkThreads(SEXP nSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    setLDshrinkThreads(n);
-    return R_NilValue;
-END_RCPP
-}
-// getLDshrinkThreads
-int getLDshrinkThreads();
-RcppExport SEXP _LDshrink_getLDshrinkThreads() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(getLDshrinkThreads());
-    return rcpp_result_gen;
-END_RCPP
-}
 // calc_theta_exp
 double calc_theta_exp(const double m);
 RcppExport SEXP _LDshrink_calc_theta_exp(SEXP mSEXP) {
@@ -124,6 +73,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// flip_allele
+Rcpp::LogicalVector flip_allele(const Rcpp::IntegerVector& gwas_ref, const Rcpp::IntegerVector& gwas_alt, const Rcpp::IntegerVector& ld_ref, const Rcpp::IntegerVector& ld_alt);
+RcppExport SEXP _LDshrink_flip_allele(SEXP gwas_refSEXP, SEXP gwas_altSEXP, SEXP ld_refSEXP, SEXP ld_altSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type gwas_ref(gwas_refSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type gwas_alt(gwas_altSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type ld_ref(ld_refSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type ld_alt(ld_altSEXP);
+    rcpp_result_gen = Rcpp::wrap(flip_allele(gwas_ref, gwas_alt, ld_ref, ld_alt));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sorted_snp_df
 bool sorted_snp_df(const Rcpp::DataFrame& snp_info);
 RcppExport SEXP _LDshrink_sorted_snp_df(SEXP snp_infoSEXP) {
@@ -163,38 +126,19 @@ BEGIN_RCPP
 END_RCPP
 }
 
-// validate (ensure exported C++ functions exist before calling them)
-static int _LDshrink_RcppExport_validate(const char* sig) { 
-    static std::set<std::string> signatures;
-    if (signatures.empty()) {
-        signatures.insert("int(*blosc)()");
-    }
-    return signatures.find(sig) != signatures.end();
-}
-
-// registerCCallable (register entry points for exported C++ functions)
-RcppExport SEXP _LDshrink_RcppExport_registerCCallable() { 
-    R_RegisterCCallable("LDshrink", "_LDshrink_blosc", (DL_FUNC)_LDshrink_blosc_try);
-    R_RegisterCCallable("LDshrink", "_LDshrink_RcppExport_validate", (DL_FUNC)_LDshrink_RcppExport_validate);
-    return R_NilValue;
-}
-
 RcppExport SEXP run_testthat_tests();
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_LDshrink_blosc", (DL_FUNC) &_LDshrink_blosc, 0},
-    {"_LDshrink_setLDshrinkThreads", (DL_FUNC) &_LDshrink_setLDshrinkThreads, 1},
-    {"_LDshrink_getLDshrinkThreads", (DL_FUNC) &_LDshrink_getLDshrinkThreads, 0},
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
     {"_LDshrink_shrinkPanel", (DL_FUNC) &_LDshrink_shrinkPanel, 5},
     {"_LDshrink_shrinkCov", (DL_FUNC) &_LDshrink_shrinkCov, 5},
     {"_LDshrink_calcDist", (DL_FUNC) &_LDshrink_calcDist, 1},
+    {"_LDshrink_flip_allele", (DL_FUNC) &_LDshrink_flip_allele, 4},
     {"_LDshrink_sorted_snp_df", (DL_FUNC) &_LDshrink_sorted_snp_df, 1},
     {"_LDshrink_set_ld_region", (DL_FUNC) &_LDshrink_set_ld_region, 3},
     {"_LDshrink_interpolate_map", (DL_FUNC) &_LDshrink_interpolate_map, 4},
-    {"_LDshrink_RcppExport_registerCCallable", (DL_FUNC) &_LDshrink_RcppExport_registerCCallable, 0},
-    {"run_testthat_tests",                     (DL_FUNC) &run_testthat_tests,                     0},
+    {"run_testthat_tests",        (DL_FUNC) &run_testthat_tests,        0},
     {NULL, NULL, 0}
 };
 

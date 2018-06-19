@@ -4,4 +4,5 @@
 ^inst/ldetect*
 ^inst/snakemake_files/$
 ^inst/snakemake_files/*$
+^.projectile
 ^inst/ldetect_files/$

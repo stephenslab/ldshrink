@@ -17,7 +17,7 @@ test_that("Equal to R implementation",{
 
   tLD <- LDshrink(haplomat,mapdat)
   calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){
-    S <- cov(hmata)
+    S <- stats::cov(hmata)
     p <- length(mapa)
     td <- abs(outer(mapa,mapa,`-`))
     # td[lower.tri(td)] <- 0
@@ -32,25 +32,70 @@ test_that("Equal to R implementation",{
     
     eye <- diag(p)*(0.5*theta * (1-0.5*theta))
     SigHat <-  ((1-theta)*(1-theta))*S+eye
-    return(cov2cor(SigHat))
+    return(stats::cov2cor(SigHat))
   }
   
   RLD <- calcLDR(haplomat,mapdat)
   expect_equal(RLD,tLD)  
 })
 
-test_that("blockwise implementation works",{
-  mdir <- system.file("test_gdsf/test_SNP.h5",package="LDshrink")
-  of <- tempfile()
-  snp_df <- EigenH5::read_df_h5(h5filepath = mdir,groupname = "SNPinfo")
-  p <- nrow(snp_df)
-  snp_df <- mutate(snp_df,region_id=sort(rep(1:2,p/2)))
+
+
+test_that("Equal to R implementation",{
+  n <- 1000
+  p <- 50
   
-  tr <- chunkwise_LD_h5(mdir,of,snp_df)
-  ls_h5(of,"LD/1")
-  rR <- read_matrix_h5(of,"LD/1","R")
+  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+  mapdat <- cumsum(runif(p))
+  #data("haplomat")
   
+  #data("mapdat")
+  
+  tLD <- LDshrink(haplomat,mapdat)
+  
+  LDshrink_alt <- function(haplo_panel,map_data,m=85,Ne=11490.672741,cutoff=1e-3,isGeno=NA,cov_2_cor=T,na.rm=T){
+    if(is.na(isGeno)){
+      isGeno <- max(haplo_panel,na.rm = na.rm)>1
+    }
+    stopifnot(!is.na(isGeno))
+    Genomult <- ifelse(isGeno,0.5,1)
+    haplo_panel <- scale(haplo_panel,center=T,scale=F)
+    S <- stats::cov(haplo_panel,use=ifelse(na.rm,"complete.obs","all.obs"))*Genomult
+    mS <- alt_shrinkCov(S,map_data,m,Ne,cutoff)
+    if(cov_2_cor){
+      return(stats::cov2cor(mS))
+    }else{
+      return(mS)
+    }
+  }
+  nLD <- LDshrink_alt(haplomat,mapdat)
+  
+  expect_equal(tLD,nLD)
+  
+  calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){
+    S <- stats::cov(hmata)
+    p <- length(mapa)
+    td <- abs(outer(mapa,mapa,`-`))
+    # td[lower.tri(td)] <- 0
+    # td <- td+t(td)
+    rho = 4*Ne*(td)/100;
+    rho=-rho/(2*m);
+    tshrinkage=exp(rho);
+    tshrinkage[tshrinkage<cutoff] <- 0
+    diag(tshrinkage) <- 1
+    S <- S*tshrinkage
+    theta <- calc_theta(m)
+    
+    eye <- diag(p)*(0.5*theta * (1-0.5*theta))
+    SigHat <-  ((1-theta)*(1-theta))*S+eye
+    return(stats::cov2cor(SigHat))
+  }
+  
+  RLD <- calcLDR(haplomat,mapdat)
+  expect_equal(RLD,tLD)  
 })
+
+
 
 
 

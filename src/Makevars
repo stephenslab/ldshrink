@@ -1,11 +1,4 @@
 CXX_STD = CXX17
-RHDF5_LIBS=`echo 'Rhdf5lib::pkgconfig("PKG_CXX_LIBS")'|\
-    "${R_HOME}/bin/R" --vanilla --slave`
-BLOSC_CFLAGS+=$(shell echo 'libblosc::pkgconfig("PKG_CFLAGS")'|\
-"${R_HOME}/bin/R" --vanilla --slave)
-
-PKG_LIBS+=$(shell echo 'libblosc::pkgconfig("PKG_LIBS_static")' |\
-"${R_HOME}/bin/R" --vanilla --slave)
-
-PKG_LIBS += $(RHDF5_LIBS) 
-PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DUSE_EIGEN -DUSE_BLOSC ${BLOSC_CFLAGS} -DH5_USE_EIGEN -fopenmp -DUSE_MKL
+PKG_CPPFLAGS+= -I../inst/include/ -DEIGEN_NO_DEBUG -DEIGEN_USE_LAPACK -DEIGEN_USE_BLAS $(SHLIB_OPENMP_CFLAGS)
+PKG_LIBS =  $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CFLAGS)
+PKG_CFLAGS+= $(SHLIB_OPENMP_CFLAGS)
