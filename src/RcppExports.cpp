@@ -32,21 +32,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// shrinkPanel
-Rcpp::NumericMatrix shrinkPanel(const Rcpp::NumericMatrix hpanel, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff);
-RcppExport SEXP _LDshrink_shrinkPanel(SEXP hpanelSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix >::type hpanel(hpanelSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type mapd(mapdSEXP);
-    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
-    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
-    rcpp_result_gen = Rcpp::wrap(shrinkPanel(hpanel, mapd, m, Ne, cutoff));
-    return rcpp_result_gen;
-END_RCPP
-}
 // shrinkCov
 Rcpp::NumericMatrix shrinkCov(const Rcpp::NumericMatrix S, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff);
 RcppExport SEXP _LDshrink_shrinkCov(SEXP SSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP) {
@@ -59,6 +44,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
     Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
     rcpp_result_gen = Rcpp::wrap(shrinkCov(S, mapd, m, Ne, cutoff));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fastLDshrink
+Rcpp::NumericMatrix fastLDshrink(const Rcpp::NumericMatrix genotype_data, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff, const bool isGeno, const bool cov_2_cor);
+RcppExport SEXP _LDshrink_fastLDshrink(SEXP genotype_dataSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP isGenoSEXP, SEXP cov_2_corSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix >::type genotype_data(genotype_dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type mapd(mapdSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type isGeno(isGenoSEXP);
+    Rcpp::traits::input_parameter< const bool >::type cov_2_cor(cov_2_corSEXP);
+    rcpp_result_gen = Rcpp::wrap(fastLDshrink(genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -131,8 +133,8 @@ RcppExport SEXP run_testthat_tests();
 static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
-    {"_LDshrink_shrinkPanel", (DL_FUNC) &_LDshrink_shrinkPanel, 5},
     {"_LDshrink_shrinkCov", (DL_FUNC) &_LDshrink_shrinkCov, 5},
+    {"_LDshrink_fastLDshrink", (DL_FUNC) &_LDshrink_fastLDshrink, 7},
     {"_LDshrink_calcDist", (DL_FUNC) &_LDshrink_calcDist, 1},
     {"_LDshrink_flip_allele", (DL_FUNC) &_LDshrink_flip_allele, 4},
     {"_LDshrink_sorted_snp_df", (DL_FUNC) &_LDshrink_sorted_snp_df, 1},

@@ -75,6 +75,10 @@ download_omni_map <- function(pop="CEU", destination_dir =tempdir()){
   return()
 }
 
+
+
+
+
 LDshrink_evd <- function(panel,map=NULL,m=85,
                             Ne=11490.672741,
                             cutoff=1e-3,
@@ -82,7 +86,7 @@ LDshrink_evd <- function(panel,map=NULL,m=85,
 #    stopifnot(ncol(panel)==len
     isGeno <- max(panel,na.rm = na.rm)>1
     if(useLDshrink){
-        S <- LDshrink(haplo_panel = panel,
+        S <- LDshrink(genotype_panel = panel,
                       map_data = map,
                       m = m,
                       Ne = Ne,
@@ -96,7 +100,33 @@ LDshrink_evd <- function(panel,map=NULL,m=85,
     evdR <- eigen(S)
     return(list(R=S,L2=L2,D=evdR$values,Q=evdR$vectors))
 }
+LDshrink_df <- function(panel,map,
+                        snp_id,
+                        m=85,
+                        Ne=11490.672741,
+                        cutoff=1e-3,
+                        r2_cutoff=0.01,
+                        useLDshrink=T,
+                        na.rm=F){
 
+  if(useLDshrink){
+    return(ld2df(ldmat= LDshrink(genotype_panel = panel,
+                  map_data = map,
+                  m = m,
+                  Ne = Ne,
+                  cutoff = cutoff,
+                  cov_2_cor = T,
+                  na.rm = na.rm), 
+               rsid = snp_id,
+               r2cutoff = r2_cutoff,
+               stringsAsFactors = F))
+
+  }else{
+    return(ld2df(ldmat=stats::cor(panel,use = "complete.obs"),
+          rsid=snp_id,
+          r2cutoff=r2_cutoff))
+  }
+}
 
 
 

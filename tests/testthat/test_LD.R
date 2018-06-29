@@ -12,10 +12,13 @@ test_that("theta is computed correctly",{
 
 
 test_that("Equal to R implementation",{
-  data("haplomat")
-  data("mapdat")
+  n <- 500
+  p <- 1100
+  
+  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+  mapdat <- cumsum(runif(p))
 
-  tLD <- LDshrink(haplomat,mapdat)
+  tLD <- LDshrink(haplomat,mapdat,na.rm = F)
   calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){
     S <- stats::cov(hmata)
     p <- length(mapa)
@@ -40,6 +43,42 @@ test_that("Equal to R implementation",{
 })
 
 
+test_that("na.rm=T == na.rm==F",{
+  # library(LDshrink)
+  n <- 500
+  p <- 1100
+
+  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+  mapdat <- cumsum(runif(p))
+  #data("haplomat")
+  
+  #data("mapdat")
+  ahaplomat <- haplomat+0
+  bhaplomat <- haplomat+0
+  tLD <- LDshrink(ahaplomat,mapdat)
+  expect_equal(ahaplomat,haplomat)
+  fLD <- LDshrink(bhaplomat,mapdat,na.rm=F)
+  expect_equal(bhaplomat,haplomat)
+  aLD <- LDshrink(ahaplomat,mapdat,m,Ne,cutoff,na.rm=F,useAlt = T)
+  tmb <- microbenchmark::microbenchmark(aLD=LDshrink(bhaplomat,mapdat,na.rm=F,useAlt=T),times=50)
+  expect_equal(tLD,fLD)
+  expect_equal(aLD,tLD)
+})
+
+
+test_that("alternative shrinkage",{
+  p <- 4
+  mapdat <- cumsum(runif(p))
+  m=85
+  Ne=11490.672741
+  cutoff = 0.001
+  adist <- altDist(mapdat,m,Ne,cutoff)
+  tdist <- trueDist(mapdat,m,Ne,cutoff)
+  expect_equal(adist,tdist)
+  
+  
+  
+})
 
 test_that("Equal to R implementation",{
   n <- 1000
@@ -51,27 +90,9 @@ test_that("Equal to R implementation",{
   
   #data("mapdat")
   
-  tLD <- LDshrink(haplomat,mapdat)
+  tLD <- LDshrink(haplomat,mapdat,na.rm=T)
   
-  LDshrink_alt <- function(haplo_panel,map_data,m=85,Ne=11490.672741,cutoff=1e-3,isGeno=NA,cov_2_cor=T,na.rm=T){
-    if(is.na(isGeno)){
-      isGeno <- max(haplo_panel,na.rm = na.rm)>1
-    }
-    stopifnot(!is.na(isGeno))
-    Genomult <- ifelse(isGeno,0.5,1)
-    haplo_panel <- scale(haplo_panel,center=T,scale=F)
-    S <- stats::cov(haplo_panel,use=ifelse(na.rm,"complete.obs","all.obs"))*Genomult
-    mS <- alt_shrinkCov(S,map_data,m,Ne,cutoff)
-    if(cov_2_cor){
-      return(stats::cov2cor(mS))
-    }else{
-      return(mS)
-    }
-  }
-  nLD <- LDshrink_alt(haplomat,mapdat)
-  
-  expect_equal(tLD,nLD)
-  
+
   calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){
     S <- stats::cov(hmata)
     p <- length(mapa)

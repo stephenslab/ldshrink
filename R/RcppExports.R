@@ -13,12 +13,12 @@ ld2df <- function(ldmat, rsid, r2cutoff = 0.01, stringsAsFactors = FALSE) {
     .Call(`_LDshrink_ld2df`, ldmat, rsid, r2cutoff, stringsAsFactors)
 }
 
-shrinkPanel <- function(hpanel, mapd, m, Ne, cutoff) {
-    .Call(`_LDshrink_shrinkPanel`, hpanel, mapd, m, Ne, cutoff)
-}
-
 shrinkCov <- function(S, mapd, m, Ne, cutoff) {
     .Call(`_LDshrink_shrinkCov`, S, mapd, m, Ne, cutoff)
+}
+
+fastLDshrink <- function(genotype_data, mapd, m, Ne, cutoff, isGeno = TRUE, cov_2_cor = TRUE) {
+    .Call(`_LDshrink_fastLDshrink`, genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor)
 }
 
 calcDist <- function(map) {
