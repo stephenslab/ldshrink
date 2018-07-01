@@ -100,11 +100,14 @@ public:
   {
     
     const size_t p=mapd.size();
-    if(S.cols()!=p || S.rows()!=p){
+    const size_t Srows = S.rows();
+    if(S.cols()!=p || Srows!=p){
       Rcpp::stop("Covariance Matrix have column(row) number equal to the size of genetic map");
     }
-    const bool SNPfirst= genotype_data.rows()==p;
-    if (SNPfirst && genotype_data.cols()==p){
+    const size_t genrows = genotype_data.rows();
+    const bool SNPfirst= (genrows==p);
+    const size_t gencols  = genotype_data.cols();
+    if (SNPfirst && (gencols==p)){
       Rcpp::Rcerr<<"Warning: genoype_data matrix is of dimension "<<p<<"x"<<p<<", assuming data is stored SNPxSample!";
     }
     const size_t N = SNPfirst ? genotype_data.cols() : genotype_data.rows();
