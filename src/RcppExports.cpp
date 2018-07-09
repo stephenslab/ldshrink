@@ -8,8 +8,8 @@
 using namespace Rcpp;
 
 // ld2df_p
-Rcpp::DataFrame ld2df_p(const Eigen::Map<Eigen::MatrixXd> scaled_data, const Eigen::ArrayXd mapd, Rcpp::StringVector rsid, const double m, const double Ne, const double cutoff, const double r2cutoff);
-RcppExport SEXP _LDshrink_ld2df_p(SEXP scaled_dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP) {
+Rcpp::DataFrame ld2df_p(const Eigen::Map<Eigen::MatrixXd> scaled_data, const Eigen::ArrayXd mapd, Rcpp::StringVector rsid, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress);
+RcppExport SEXP _LDshrink_ld2df_p(SEXP scaled_dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -20,7 +20,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
     Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
     Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df_p(scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff));
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df_p(scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -148,7 +149,7 @@ END_RCPP
 RcppExport SEXP run_testthat_tests();
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_LDshrink_ld2df_p", (DL_FUNC) &_LDshrink_ld2df_p, 7},
+    {"_LDshrink_ld2df_p", (DL_FUNC) &_LDshrink_ld2df_p, 8},
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
     {"_LDshrink_shrinkCov", (DL_FUNC) &_LDshrink_shrinkCov, 5},
