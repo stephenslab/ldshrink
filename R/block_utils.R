@@ -110,16 +110,13 @@ LDshrink_df <- function(panel,map,
                         na.rm=F){
 
   if(useLDshrink){
-    return(ld2df(ldmat= LDshrink(genotype_panel = panel,
-                  map_data = map,
+      return(ld2df_p(scaled_data=scale(panel,center=T,scale=F),
+                     mapd=map
                   m = m,
                   Ne = Ne,
                   cutoff = cutoff,
-                  cov_2_cor = T,
-                  na.rm = na.rm), 
-               rsid = snp_id,
-               r2cutoff = r2_cutoff,
-               stringsAsFactors = F))
+                  rsid = snp_id,
+                  r2cutoff = r2_cutoff))
 
   }else{
     return(ld2df(ldmat=stats::cor(panel,use = "complete.obs"),
