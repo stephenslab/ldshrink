@@ -7,8 +7,9 @@ Author: Nicholas Knoblauch
 Maintainer: Nicholas Knoblauch <nwknoblauch@gmail.com>
 Description: Compute LD using the Wen and Stephens shrinkage estimator. Companion package to rssr.
 License: GPL (>= 3)
-Imports: Rcpp (>= 0.12.10), RcppEigen (>= 0.3.2.9.1),dplyr,progress,BBmisc,BH,magrittr
-LinkingTo: Rcpp, RcppEigen,BH,RcppProgress,testthat
+Imports: Rcpp (>= 0.12.10), RcppEigen (>= 0.3.2.9.1),dplyr,progress,BBmisc,BH,magrittr,RcppParallel
+LinkingTo: Rcpp, RcppEigen,BH,RcppProgress,testthat,RcppParallel
 Suggests: testthat, knitr,rmarkdown
+SystemRequirements: GNU make
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1

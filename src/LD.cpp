@@ -13,6 +13,11 @@ double calc_theta_exp(const double m){
   return(calc_theta(m));
 }
 
+
+
+
+
+
 //' 'Melt' an LD matrix, dropping elements below a given r-square cutoff
 //[[Rcpp::export]]
 Rcpp::DataFrame ld2df(const Eigen::MatrixXd &ldmat, Rcpp::StringVector rsid,const double r2cutoff=0.01,const bool stringsAsFactors=false){

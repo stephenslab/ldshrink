@@ -1,13 +1,13 @@
 #' Calculate LDshrink adjusted LD matrix
 #'
 #' @param haplo_panel `n` by `p` genotype or haplotype numeric matrix from a contiguous region of the genome ()
-#' @param map_data vector of cumulative genetic map values.  Must be 
+#' @param map_data vector of cumulative genetic map values.  Must be
 #'
 #' @return LD matrix
 #' @export
 #'
 #' @examples
-LDshrink <- function(genotype_panel,map_data,m=85,Ne=11490.672741,cutoff=1e-3,isGeno=NA,cov_2_cor=TRUE,na.rm=TRUE){
+LDshrink <- function(genotype_panel,map_data,m=85,Ne=11490.672741,cutoff=1e-3,isGeno=NA,cov_2_cor=TRUE,na.rm=TRUE,process_map=TRUE){
   if(is.na(isGeno)){
     isGeno <- max(genotype_panel,na.rm = na.rm)>1
   }
