@@ -144,7 +144,6 @@ public:
     }
   }
 
- 
 
   T shrinkp(const T map_dist){
     T rho = 4*Ne*(map_dist)/100;
@@ -161,7 +160,7 @@ public:
     S.diagonal().setOnes();
   }
   template<int RN>
-  void calc_cov(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RN> > mat,const bool isGeno){
+  void calc_cov(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RN> > mat, const bool isGeno){
     const double GenoMult = isGeno ? 0.5 : 1;
     // hmata = hmata.rowwise()-hmata.colwise().mean();
     mat = mat.rowwise()-mat.colwise().mean();
@@ -219,7 +218,7 @@ void LD2df(const Eigen::MatrixBase<Derived> &ldmat,
   for(int i=0; i<p;i++){
     for(int j=i+1; j<p;j++ ){
       const double r2=ldmat.coeff(i,j)*ldmat.coeff(i,j);
-      if(r2>r2cutoff){
+      if(r2>=r2cutoff){
         corv.push_back(r2);
         rowsnp.push_back(rsid[i]);
         colsnp.push_back(rsid[j]);

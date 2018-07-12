@@ -15,21 +15,6 @@ double calc_theta_exp(const double m){
 
 
 
-
-
-
-//' 'Melt' an LD matrix, dropping elements below a given r-square cutoff
-//[[Rcpp::export]]
-Rcpp::DataFrame ld2df(const Eigen::MatrixXd &ldmat, Rcpp::StringVector rsid,const double r2cutoff=0.01,const bool stringsAsFactors=false){
-  using namespace Rcpp;
-  std::vector<std::string> rowsnp;
-  std::vector<std::string> colsnp;
-  std::vector<double>corv;
-  LD2df(ldmat,Rcpp::as<std::vector<std::string> >(rsid),rowsnp,colsnp,corv,r2cutoff);
-  return(Rcpp::DataFrame::create(_["rowsnp"]=Rcpp::wrap(rowsnp),_["colsnp"]=Rcpp::wrap(colsnp),_["r2"]=wrap(corv),_["stringsAsFactors"]=stringsAsFactors));
-}
-
-
 //[[Rcpp::export]]
 Rcpp::NumericMatrix shrinkCov(const Rcpp::NumericMatrix S,const Rcpp::NumericVector &mapd,const double m, const double Ne, const double cutoff){
   const size_t p = mapd.size();
@@ -49,7 +34,6 @@ Rcpp::NumericMatrix fastLDshrink(const Rcpp::NumericMatrix genotype_data,const R
   Eigen::Map<Eigen::MatrixXd> mS(&nS(0,0),p,p);
   Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,1> > mmap(&mapd(0),p);
   LDshrinker<double> lds(mS,mmap,m,Ne,cutoff,genotype_data,isGeno);
-  // Rcpp::Rcerr<<Eigen::nbThreads( )<<std::endl;
   lds.Shrink();
   if(cov_2_cor){
     lds.cov_2_cor();

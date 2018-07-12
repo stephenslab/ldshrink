@@ -5,6 +5,30 @@ data(break_df)
 
 
 
+test_that("linear indexing of symmetric matrices",{
+  
+  p <- 9
+  ptot <- (p^2-p)/2+p
+  mymat <- matrix(0,p,p)
+  mymat[lower.tri(mymat,diag=T)] <- 1:ptot
+  
+  indfun <- function(index,p){
+    k <- index-1
+    i = floor( ( 2*p+1 - sqrt( (2*p+1)*(2*p+1) - 8*k ) ) / 2 )
+    # i = floor( ( 2*p+1 - sqrt( (2*p+1)*(2*p+1) - 8*k ) ) / 2 ) 
+    # j = k - p*i + i*(i-1)/2 
+    j = k - (2*p-1- i)*i/2
+    return(matrix(c(j,i),1,2)+1)
+  }
+  for(i in 1:ptot){
+    ij <- indfun(i,p)
+    expect_equal(mymat[ij],i)
+  }
+  
+  
+})
+
+
 test_that("don't flip alleles for the same dataframe",{
   p <- 100
   sample_df <- tibble::data_frame(ref=sample(c("A","C","G","T"),100,replace=T),alt=sample(c("A","C","G","T"),100,replace=T)) %>% 

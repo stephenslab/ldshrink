@@ -7,9 +7,26 @@
 
 using namespace Rcpp;
 
-// ld2df_p
-Rcpp::DataFrame ld2df_p(const Eigen::Map<Eigen::MatrixXd> scaled_data, const Eigen::ArrayXd mapd, Rcpp::StringVector rsid, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress);
-RcppExport SEXP _LDshrink_ld2df_p(SEXP scaled_dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP) {
+// sparse_LDshrink
+SEXP sparse_LDshrink(const Eigen::Map<Eigen::MatrixXd> scaled_data, const Eigen::ArrayXd mapd, const double m, const double Ne, const double cutoff, const bool progress, const bool useLDshrink);
+RcppExport SEXP _LDshrink_sparse_LDshrink(SEXP scaled_dataSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::Map<Eigen::MatrixXd> >::type scaled_data(scaled_dataSEXP);
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd >::type mapd(mapdSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(sparse_LDshrink(scaled_data, mapd, m, Ne, cutoff, progress, useLDshrink));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ld2df
+Rcpp::DataFrame ld2df(const Eigen::Map<Eigen::MatrixXd> scaled_data, const Eigen::ArrayXd mapd, Rcpp::StringVector rsid, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useLDshrink);
+RcppExport SEXP _LDshrink_ld2df(SEXP scaled_dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +38,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
     Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
     Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df_p(scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress));
+    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df(scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useLDshrink));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -33,20 +51,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double >::type m(mSEXP);
     rcpp_result_gen = Rcpp::wrap(calc_theta_exp(m));
-    return rcpp_result_gen;
-END_RCPP
-}
-// ld2df
-Rcpp::DataFrame ld2df(const Eigen::MatrixXd& ldmat, Rcpp::StringVector rsid, const double r2cutoff, const bool stringsAsFactors);
-RcppExport SEXP _LDshrink_ld2df(SEXP ldmatSEXP, SEXP rsidSEXP, SEXP r2cutoffSEXP, SEXP stringsAsFactorsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type ldmat(ldmatSEXP);
-    Rcpp::traits::input_parameter< Rcpp::StringVector >::type rsid(rsidSEXP);
-    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
-    Rcpp::traits::input_parameter< const bool >::type stringsAsFactors(stringsAsFactorsSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df(ldmat, rsid, r2cutoff, stringsAsFactors));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -149,9 +153,9 @@ END_RCPP
 RcppExport SEXP run_testthat_tests();
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_LDshrink_ld2df_p", (DL_FUNC) &_LDshrink_ld2df_p, 8},
+    {"_LDshrink_sparse_LDshrink", (DL_FUNC) &_LDshrink_sparse_LDshrink, 7},
+    {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 9},
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
-    {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 4},
     {"_LDshrink_shrinkCov", (DL_FUNC) &_LDshrink_shrinkCov, 5},
     {"_LDshrink_fastLDshrink", (DL_FUNC) &_LDshrink_fastLDshrink, 7},
     {"_LDshrink_calcDist", (DL_FUNC) &_LDshrink_calcDist, 1},

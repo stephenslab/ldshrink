@@ -100,30 +100,6 @@ LDshrink_evd <- function(panel,map=NULL,m=85,
     evdR <- eigen(S)
     return(list(R=S,L2=L2,D=evdR$values,Q=evdR$vectors))
 }
-LDshrink_df <- function(panel, map,
-                        snp_id,
-                        m=85,
-                        Ne=11490.672741,
-                        cutoff=1e-3,
-                        r2_cutoff=0.01,
-                        useLDshrink=T,
-                        na.rm=F, progress=FALSE){
-
-  if(useLDshrink){
-      return(ld2df_p(scaled_data=scale(panel,center=T,scale=F),
-                     mapd=map,
-                     m = m,
-                     Ne = Ne,
-                     cutoff = cutoff,
-                     rsid = snp_id,
-                     r2cutoff = r2_cutoff,progress=progress))
-
-  }else{
-    return(ld2df(ldmat=stats::cor(panel,use = "complete.obs"),
-          rsid=snp_id,
-          r2cutoff=r2_cutoff))
-  }
-}
 
 
 
