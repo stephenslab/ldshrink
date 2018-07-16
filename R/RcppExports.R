@@ -9,6 +9,10 @@ ld2df <- function(scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff = 0.01, progr
     .Call(`_LDshrink_ld2df`, scaled_data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
 }
 
+ld2df_p <- function(scaled_data_a, scaled_data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff = 0.01, progress = FALSE, useLDshrink = TRUE) {
+    .Call(`_LDshrink_ld2df_p`, scaled_data_a, scaled_data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
+}
+
 #' Calculate the constant theta, given `m`
 #' @param m a number indicating the size of the panel used to create the genetic map
 #' (if using `1000-genomes-genetic-maps` from europeans, this number is 85)

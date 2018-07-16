@@ -33,6 +33,24 @@ assign_snp_block <- function(snp_df,break_df=NULL,assign_all=T){
 
 
 
+#' Assign SNPs to LD blocks
+#'
+#' @param snp_df dataframe of snp coordinates, must contain columns named `chr` and `pos`.
+#' @param break_df dataframe of LD blocks, if `NULL`, use precomputed (EUR) ldshrink LD blocks, must contain columns named `chr` `start`, `stop`, and `region_id`
+#' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
+#'
+#' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
+#' @export
+#'
+#' @examples
+chunk_genome <- function(snp_df,n_chunks=10){
+  snp_df <- group_by(snp_df,chr) %>% mutate(t_region_id=gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n())) %>% ungroup()
+  snp_df <- distinct(snp_df,chr,t_region_id) %>% mutate(region_id=1:n()) %>% inner_join(snp_df) %>% select(-t_region_id)
+  return(snp_df)
+}
+
+
+
 
 
 

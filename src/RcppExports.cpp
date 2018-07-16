@@ -43,6 +43,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ld2df_p
+Rcpp::DataFrame ld2df_p(const Eigen::Map<Eigen::MatrixXd> scaled_data_a, const Eigen::Map<Eigen::MatrixXd> scaled_data_b, const Eigen::ArrayXd mapd_a, const Eigen::ArrayXd mapd_b, Rcpp::StringVector rsid_a, Rcpp::StringVector rsid_b, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useLDshrink);
+RcppExport SEXP _LDshrink_ld2df_p(SEXP scaled_data_aSEXP, SEXP scaled_data_bSEXP, SEXP mapd_aSEXP, SEXP mapd_bSEXP, SEXP rsid_aSEXP, SEXP rsid_bSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::Map<Eigen::MatrixXd> >::type scaled_data_a(scaled_data_aSEXP);
+    Rcpp::traits::input_parameter< const Eigen::Map<Eigen::MatrixXd> >::type scaled_data_b(scaled_data_bSEXP);
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd >::type mapd_a(mapd_aSEXP);
+    Rcpp::traits::input_parameter< const Eigen::ArrayXd >::type mapd_b(mapd_bSEXP);
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type rsid_a(rsid_aSEXP);
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type rsid_b(rsid_bSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df_p(scaled_data_a, scaled_data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useLDshrink));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calc_theta_exp
 double calc_theta_exp(const double m);
 RcppExport SEXP _LDshrink_calc_theta_exp(SEXP mSEXP) {
@@ -155,6 +177,7 @@ RcppExport SEXP run_testthat_tests();
 static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_sparse_LDshrink", (DL_FUNC) &_LDshrink_sparse_LDshrink, 7},
     {"_LDshrink_ld2df", (DL_FUNC) &_LDshrink_ld2df, 9},
+    {"_LDshrink_ld2df_p", (DL_FUNC) &_LDshrink_ld2df_p, 12},
     {"_LDshrink_calc_theta_exp", (DL_FUNC) &_LDshrink_calc_theta_exp, 1},
     {"_LDshrink_shrinkCov", (DL_FUNC) &_LDshrink_shrinkCov, 5},
     {"_LDshrink_fastLDshrink", (DL_FUNC) &_LDshrink_fastLDshrink, 7},
@@ -163,7 +186,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_LDshrink_sorted_snp_df", (DL_FUNC) &_LDshrink_sorted_snp_df, 1},
     {"_LDshrink_set_ld_region", (DL_FUNC) &_LDshrink_set_ld_region, 3},
     {"_LDshrink_interpolate_map", (DL_FUNC) &_LDshrink_interpolate_map, 4},
-    {"run_testthat_tests",        (DL_FUNC) &run_testthat_tests,        0},
+    {"run_testthat_tests",        (DL_FUNC) &run_testthat_tests,         0},
     {NULL, NULL, 0}
 };
 
