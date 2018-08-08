@@ -9,41 +9,41 @@
 
 // All test files should include the <testthat.h>
 // header file.
-#include <testthat.h>
-#include "LDshrink.h"
+// #include <testthat.h>
+// #include "LDshrink.h"
 
 
 // Initialize a unit test context. This is similar to how you
 // might begin an R test file with 'context()', expect the
-// associated context should be wrapped in braced.
-context("Shrinkage functor") {
-  const	int p=3;
-  const double m=85;
-  const double Ne=11490.672741;
-  const double cutoff=0.001;
+// // associated context should be wrapped in braced.
+// context("Shrinkage functor") {
+//   const	int p=3;
+//   const double m=85;
+//   const double Ne=11490.672741;
+//   const double cutoff=0.001;
 
-  Eigen::VectorXd map_data(p);
+//   Eigen::VectorXd map_data(p);
 
-  map_data<<0.317759,0.394240,1.067599;
-  Eigen::Map<const Eigen::VectorXd> map_map(map_data.data(),p);
+//   map_data<<0.317759,0.394240,1.067599;
+//   Eigen::Map<const Eigen::VectorXd> map_map(map_data.data(),p);
 
-  Eigen::MatrixXd true_map_matrix(p,p);
-  Eigen::MatrixXd mapfmat = makeMapDiff(map_map,m,Ne,cutoff);
-  for(int i=0;i<p;i++){
-    for(int j=0; j<p;j++){
-      const double map_dist=std::fabs(map_data(j)-map_data(i));
-      double rho=4*Ne*map_dist/100;
-      rho=-rho/(2*m);
-      rho=std::exp(rho);
-      true_map_matrix(i,j)=rho<cutoff ? 0 : rho;
-      expect_true(mapfmat(i,j)==true_map_matrix(i,j));
+//   Eigen::MatrixXd true_map_matrix(p,p);
+//   Eigen::MatrixXd mapfmat = makeMapDiff(map_map,m,Ne,cutoff);
+//   for(int i=0;i<p;i++){
+//     for(int j=0; j<p;j++){
+//       const double map_dist=std::fabs(map_data(j)-map_data(i));
+//       double rho=4*Ne*map_dist/100;
+//       rho=-rho/(2*m);
+//       rho=std::exp(rho);
+//       true_map_matrix(i,j)=rho<cutoff ? 0 : rho;
+//       expect_true(mapfmat(i,j)==true_map_matrix(i,j));
 
-    }
+//     }
 
 
-  }
-  expect_true(mapfmat.isApprox(true_map_matrix));
-}
+//   }
+//   expect_true(mapfmat.isApprox(true_map_matrix));
+// }
 
 
 //   // The format for specifying tests is similar to that of

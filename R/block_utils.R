@@ -44,8 +44,8 @@ assign_snp_block <- function(snp_df,break_df=NULL,assign_all=T){
 #'
 #' @examples
 chunk_genome <- function(snp_df,n_chunks=10){
-  snp_df <- group_by(snp_df,chr) %>% mutate(t_region_id=gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n())) %>% ungroup()
-  snp_df <- distinct(snp_df,chr,t_region_id) %>% mutate(region_id=1:n()) %>% inner_join(snp_df) %>% select(-t_region_id)
+  snp_df <- dplyr::group_by(snp_df,chr) %>% dplyr::mutate(t_region_id=gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n())) %>% dplyr::ungroup()
+  snp_df <- dplyr::distinct(snp_df,chr,t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
   return(snp_df)
 }
 
@@ -94,9 +94,6 @@ download_omni_map <- function(pop="CEU", destination_dir =tempdir()){
 }
 
 
-
-
-
 LDshrink_evd <- function(panel,map=NULL,m=85,
                             Ne=11490.672741,
                             cutoff=1e-3,
@@ -114,7 +111,9 @@ LDshrink_evd <- function(panel,map=NULL,m=85,
     }else{
       S <- stats::cor(panel,use = "complete.obs")
     }
+    N <- nrow(panel)
     L2 <- colSums(S^2)-1
+    L2 <- L2-(1-L2)/(N-2)
     evdR <- eigen(S)
     return(list(R=S,L2=L2,D=evdR$values,Q=evdR$vectors))
 }
@@ -122,23 +121,24 @@ LDshrink_evd <- function(panel,map=NULL,m=85,
 
 
 
-## flip_allele_exp <- function(allele_a,allele_b){
-##   utf_i <- Vectorize(utf8ToInt)
-##   data_df <- tibble::data_frame(allele_a=allele_a,allele_b=allele_b)
-##   gwas_snp_df <- data_df %>% 
-##     tidyr::separate(allele_a,c("ref_a","alt_a")) %>% 
-##     tidyr::separate(allele_b,c("ref_b","alt_b")) %>%
-##     dplyr::mutate(
-##       ref_a=utf_i(tolower(ref_a)),
-##       alt_a=utf_i(tolower(alt_a)),
-##       ref_b=utf_i(tolower(ref_b)),
-##       alt_b=utf_i(tolower(alt_b))
-##     )
+
+
+
+flip_allele_exp <- function(allele_a,allele_b){
+  utf_i <- Vectorize(utf8ToInt)
+  data_df <- tibble::data_frame(allele_a=allele_a,allele_b=allele_b)
+  gwas_snp_df <- data_df %>%
+    tidyr::separate(allele_a,c("ref_a","alt_a")) %>%
+    tidyr::separate(allele_b,c("ref_b","alt_b")) %>%
+    dplyr::mutate(
+      ref_a=utf_i(tolower(ref_a)),
+      alt_a=utf_i(tolower(alt_a)),
+      ref_b=utf_i(tolower(ref_b)),
+      alt_b=utf_i(tolower(alt_b))
+    )
  
-##   return(flip_allele(gwas_snp_df$ref_a,
-##                      gwas_snp_df$alt_a,
-##                      gwas_snp_df$ref_b,
-##                      gwas_snp_df$alt_b))
-## }
-
-
+  return(flip_allele(gwas_snp_df$ref_a,
+                     gwas_snp_df$alt_a,
+                     gwas_snp_df$ref_b,
+                     gwas_snp_df$alt_b))
+}

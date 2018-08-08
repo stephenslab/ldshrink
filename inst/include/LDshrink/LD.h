@@ -3,9 +3,14 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <memory>
+//#include <memory>
 #include "mapdiff.hpp"
-
+// [[Rcpp::depends(RcppProgress)]]
+#include <progress.hpp>
+#include <progress_bar.hpp>
+// [[Rcpp::depends(RcppParallel)]]
+#include <RcppParallel.h>
+#include <tbb/tbb.h>
 
 
 
@@ -21,33 +26,306 @@ inline double calc_theta(const double m){
   return((1/nmsum)/(2*m+1/nmsum));
 }
 
+template <typename T,int RN>
+class LDshrink_data{
+ public:
+  std::vector<T> map;
+  size_t p;
+  Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RN> data;
+  std::vector<T> data_vars;
+  const bool SNPfirst;
+  const size_t N;
+  const bool isGeno=true;
+  std::vector<size_t> indices;
 
-// static auto calc_cov(  Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> > &hmata, const bool isGeno){
-//   T dosage_max=hmata.maxCoeff();
-//   //bool isGeno=dosage_max>1;
-//   const double GenoMult = isGeno ? 0.5 : 1;
-//   hmata = hmata.rowwise()-hmata.colwise().mean();
-//   return((((hmata.adjoint()*hmata)/(hmata.rows()-1)))*GenoMult);
-// }
+  LDshrink_data(Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RN>  data_,std::vector<T> map_,std::vector<size_t> indices_):
+    map(std::move(map_)),
+    p(map.size()),
+    data(std::move(data_)),
+    SNPfirst(data.rows()==p),
+    is_scaled(false),
+    is_vars(false),
+    N(SNPfirst ? data.cols() : data.rows()),
+    indices(std::move(indices_)){
+    if(SNPfirst){
+      data.transposeInPlace();
+    }
+    if(indices.empty()){
+      indices.resize(p);
+      std::iota(indices.begin(), indices.end(), 0);
+    }
+    if(indices.size()!=p){
+      Rcpp::stop("indices must be equal in size to the length of the genetic map");
+    }
+
+    if(p==N){
+      Rcpp::Rcerr<<"Warning: genoype_data matrix is of dimension "<<p<<"x"<<p<<", assuming data is stored SNPxSample!";
+    }
+    if(!std::is_sorted(map.begin(),map.end(),std::less<T>())){
+      Rcpp::stop("Recombination map must be non-decreasing\n");
+    }
+  }
+  bool is_scaled;
+  bool is_vars;
+  void scale_data(){
+    if(!is_scaled){
+      data = data.rowwise()-data.colwise().mean();
+      is_scaled=true;
+    }
+  }
+  void calc_vars(){
+    if(!is_vars){
+      if(!is_scaled){
+	scale_data();
+      }
+      data_vars.resize(p);
+      tbb::parallel_for(tbb::blocked_range<size_t>(0,p),[&](const tbb::blocked_range<size_t> &r){
+						     for(size_t i=r.begin(); i!=r.end();i++){
+						       data_vars[i]=(data.col(i).array().square().sum()/(N-1));
+						     }
+						   });
+      is_vars=true;
+    }
+  }
+};
 
 
 
 
-// template<typename DerivedA,typename DerivedB>
-//   void calc_cov( Eigen::MatrixBase<DerivedA> mat,Eigen::MatrixBase<DerivedB> &S){
-//     mat = mat.rowwise()-mat.colwise().mean();
-//   S= (((mat.adjoint()*mat)/(mat.rows()-1)));
-// }
-// template<typename DerivedA,typename DerivedB>
-// void calc_cov_s(Eigen::MatrixBase<DerivedA> &mat,Eigen::MatrixBase<DerivedB> &S){
-//   // Rcpp::Rcout<<"Using : "<<n<<" threads"<<std::endl;
-//   // mat = mat.rowwise()-mat.colwise().mean();
-//   S= (((mat.adjoint()*mat)/(mat.rows()-1)));
-// }
+template<typename T,int RN>
+class Sparse_cov{
+  tbb::concurrent_vector<typename Eigen::Triplet<T,typename Eigen::SparseMatrix<T>::StorageIndex > > tripletList;
+  T m=0;
+  T Ne=0;
+  T cutoff=0;
+  T r2cutoff=0;
+  bool progress=true;
+  typedef Eigen::Triplet<T,typename Eigen::SparseMatrix<T>::StorageIndex > Trip;
+ public:
+  Sparse_cov(bool useLDshrink_=true){
+    tripletList.reserve(10000);
+  }
+  Sparse_cov(const T m_,const T Ne_, const T cutoff_, const T r2cutoff_=0,const bool progress_=true):
+    m(m_),
+    Ne(Ne_),
+    cutoff(cutoff_),
+    r2cutoff(r2cutoff_),
+    progress(progress_){
+    tripletList.reserve(10000);
+  }
+  std::pair<size_t,size_t> row_col_t(const size_t k, const size_t p){
+    size_t i = floor( ( 2*p+1 - sqrt( (2*p+1)*(2*p+1) - 8*k ) ) / 2 );
+    size_t j = k - (2*p-1- i)*i/2;
+    return(std::pair<size_t,size_t>(i,j));
+  }
+  void LDshrink(const LDshrink_data<T,RN> *a){
+    const size_t p=a->p;
+    const size_t p_od = (((p*p)-p)/2)+p;
+    Progress pr(p_od, progress);
+    if(!a->is_vars){
+      Rcpp::stop("data must be scaled before calling LDshrink");
+    }
+    const auto &map = a->map;
+    const auto &scaled_data = a->data;
+    const auto &data_vars = a->data_vars;
+    const auto &indices =	a->indices;
+    const int num_ind =	a->N;
+    const bool isGeno=a->isGeno;
+    const T GenoMult = isGeno ? 0.5 : 1;
+    const T theta=calc_theta(m);
+    const T pre_mult =GenoMult*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
+    tbb::parallel_for(tbb::blocked_range<size_t>(0,p_od),[&](const tbb::blocked_range<size_t> &r){
+						      for(size_t ir=r.begin();ir!=r.end();ir++){
+							auto idx =row_col_t(ir,p);
+							const size_t i=idx.first;
+							const size_t j=idx.second;
+							const size_t index_i = indices[i];
+							const size_t index_j = indices[j];
+							if(i==j){
+							  tripletList.push_back(Trip(index_i,index_j,1.0));
+							}else{
+							  T map_dist=map[j]-map[i];
+							  T rho = 4*Ne*(map_dist)/100;
+							  rho = -rho/(2*m);
+							  rho =std::exp(rho);
+							  if(rho >= cutoff){
+							    T cov = (scaled_data.col(j).dot(scaled_data.col(i))/(num_ind-1))*rho*GenoMult*(1-theta)*(1-theta);
+							    cov=cov/(pre_mult*std::sqrt(data_vars[i]*data_vars[j]));
+							    if(((cov*cov)>=r2cutoff)){
+							      tripletList.push_back(Trip(index_i,index_j,cov));
+							    }
+							  }
+							}
+						      }
+						      pr.increment(r.end()-r.begin());
+						    });
+
+  }
+  void cor(const LDshrink_data<T,RN> *a){
+    const size_t p=a->p;
+    const size_t p_od = (((p*p)-p)/2)+p;
+    Progress pr(p_od, progress);
+    if(!a->is_vars){
+      Rcpp::stop("data must be scaled before calling LDshrink");
+    }
+    const auto &scaled_data = a->data;
+    const auto &data_vars = a->data_vars;
+    const auto &indices =	a->indices;
+    const int num_ind =	a->N;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0,p_od),[&](const tbb::blocked_range<size_t> &r){
+							   for(size_t ir=r.begin();ir!=r.end();ir++){
+							     auto idx =row_col_t(ir,p);
+							     const size_t i=idx.first;
+							     const size_t j=idx.second;
+							     if(i==j){
+							       tripletList.push_back(Trip(indices[i],indices[i],1.0));
+							     }else{
+							       T cov = (scaled_data.col(j).dot(scaled_data.col(i))/(num_ind-1))/std::sqrt(data_vars[i]*data_vars[j]);
+							       if(((cov*cov)>=r2cutoff)){
+								 tripletList.push_back(Trip(indices[i],indices[j],cov));
+							       }
+							     }
+							   }
+							   pr.increment(r.end()-r.begin());
+							 });
+
+  }
+
+
+  void LDshrink(const LDshrink_data<T,RN> *a,const LDshrink_data<T,RN> *b){
+    const size_t p_a =a->p;
+    const size_t p_b =b->p;
+
+    const size_t p_od = p_a*p_b;
+    Progress pr(p_od, progress);
+    if((!a->is_vars) || (!b->is_vars)){
+      Rcpp::stop("data must be scaled before calling LDshrink");
+    }
+    const auto &map_a =         a->map;
+    const auto &scaled_data_a = a->data;
+    const auto &data_vars_a =   a->data_vars;
+    const auto &index_a =	a->indices;
+
+    const auto &map_b =         b->map;
+    const auto &scaled_data_b = b->data;
+    const auto &data_vars_b =   b->data_vars;
+    const auto &index_b =	b->indices;
+    const int num_ind =	a->N;
+    const bool isGeno= a->isGeno;
+    const T GenoMult = isGeno ? 0.5 : 1;
+    const T theta = calc_theta(m);
+    const T pre_mult =GenoMult*(1-theta)*(1-theta)+0.5*theta*(1-0.5*theta);
+
+    tbb::parallel_for(tbb::blocked_range2d<size_t>(0,p_a,0,p_b),
+		      [&](const tbb::blocked_range2d<size_t> &r){
+		   for( size_t i=r.rows().begin(); i!=r.rows().end(); ++i ){
+		     for( size_t j=r.cols().begin(); j!=r.cols().end(); ++j ) {
+		       T map_dist=map_b[j]-map_a[i];
+		       T rho = 4*Ne*(map_dist)/100;
+		       rho = -rho/(2*m);
+		       rho =std::exp(rho);
+		       if(rho >= cutoff){
+			 T cov = (scaled_data_a.col(i).dot(scaled_data_b.col(j))/(num_ind-1))*rho*GenoMult*(1-theta)*(1-theta);
+			 cov=cov/(pre_mult*std::sqrt(data_vars_a[i]*data_vars_b[j]));
+			 if( ((cov*cov)>=r2cutoff) && (i!=j)){
+			   tripletList.push_back(Trip(index_a[i],index_b[j],cov));
+			   //			   tripletList.push_back(Trip(i,j,cov));
+			 }
+		       }
+		     }
+		   }
+		   size_t tot_prog = (r.rows().end()-r.rows().begin())*(r.cols().end()-r.cols().begin());
+		   pr.increment(tot_prog);
+		 });
+  }
+
+  void cor(const LDshrink_data<T,RN> *a,const LDshrink_data<T,RN> *b){
+    const size_t p_a =a->p;
+    const size_t p_b =b->p;
+    const size_t p_od = p_a*p_b;
+    Progress pr(p_od, progress);
+    if((!a->is_vars) || (!b->is_vars)){
+      Rcpp::stop("data must be scaled before calling LDshrink");
+    }
+    const auto &scaled_data_a = a->data;
+    const auto &data_vars_a =   a->data_vars;
+    const auto &index_a =	a->indices;
+    const auto &scaled_data_b = b->data;
+    const auto &data_vars_b =   b->data_vars;
+    const auto &index_b =	b->indices;
+    const int num_ind =	a->N;
+    tbb::parallel_for(tbb::blocked_range2d<size_t>(0,p_a,0,p_b),
+		      [&](const tbb::blocked_range2d<size_t> &r){
+			for( size_t i=r.rows().begin(); i!=r.rows().end(); ++i ){
+			  for( size_t j=r.cols().begin(); j!=r.cols().end(); ++j ) {
+			    T cov = (scaled_data_a.col(i).dot(scaled_data_b.col(j))/(num_ind-1))/std::sqrt(data_vars_a[i]*data_vars_b[j]);
+			    if( ((cov*cov)>=r2cutoff) && (i!=j)){
+			      tripletList.push_back(Trip(i,j,cov));
+			    }
+			  }
+			}
+
+			size_t tot_prog = (r.rows().end()-r.rows().begin())*(r.cols().end()-r.cols().begin());
+			pr.increment(tot_prog);
+		      });
+  }
+  Eigen::SparseMatrix<T> sparseMatrix(const size_t p_a,const size_t p_b)const{
+    const size_t num_elem=tripletList.size();
+    Eigen::SparseMatrix<T> object(p_a,p_b);
+    Rcpp::Rcerr<<"About to create sparse matrix of size: ";
+    Rcpp::Rcerr<<num_elem<<std::endl;
+    object.setFromTriplets(tripletList.begin(), tripletList.end());
+    Rcpp::Rcerr<<"Sparse Matrix created"<<std::endl;
+    return(object);
+  }
+  Rcpp::S4 dsCMatrix(const size_t p_a, const size_t p_b)const{
+    auto object = this->sparseMatrix(p_a,p_b);
+    using namespace Rcpp;
+    const int    nnz = object.nonZeros();
+    Rcpp::Rcerr<<"Number of entries: "<<nnz<<std::endl;
+    S4 ans("dsCMatrix");
+    ans.slot("Dim")  = Dimension(object.rows(), object.cols());
+    ans.slot("i") =
+      IntegerVector(object.innerIndexPtr(), object.innerIndexPtr() + nnz);
+    ans.slot("p")    = IntegerVector(object.outerIndexPtr(),
+				     object.outerIndexPtr() + object.outerSize() + 1);
+    ans.slot("x")    = Rcpp::NumericVector(object.valuePtr(), object.valuePtr() + nnz);
+    return(ans);
+  }
+  template<int RTYPE>
+  Rcpp::DataFrame ld2df(const Rcpp::Vector<RTYPE> rsid_a, const Rcpp::Vector<RTYPE> rsid_b)const{
+    const size_t num_trip=tripletList.size();
+    Rcpp::Vector<RTYPE> rowid(num_trip);
+    Rcpp::Vector<RTYPE> colid(num_trip);
+    Rcpp::NumericVector rvec(num_trip);
+    for(size_t i=0; i<num_trip;i++){
+      auto trip	= tripletList[i];
+      rowid(i)=rsid_a(trip.row());
+      colid(i)=rsid_b(trip.col());
+      rvec(i)=trip.value();
+    }
+    using namespace Rcpp;
+    bool stringsAsFactors = false;
+    return(Rcpp::DataFrame::create(_["rowsnp"]=rowid,_["colsnp"]=colid,_["r"]=rvec,_["stringsAsFactors"]=false));
+  }
+  Rcpp::DataFrame ld2df(const size_t p_a, const size_t p_b)const{
+    Rcpp::IntegerVector indices_a(p_a);
+    std::iota(indices_a.begin(), indices_a.end(), 1);
+    Rcpp::IntegerVector indices_b(p_b);
+    std::iota(indices_b.begin(), indices_b.end(), 1);
+    return(ld2df(indices_a,indices_b));
+  }
+};
 
 
 
-template<typename T>
+
+
+
+
+
+
+  template<typename T>
 class LDshrinker{
   std::vector<T> Sdat;
 public:
@@ -65,25 +343,7 @@ public:
 						     mapd(nullptr,1),
 						     S(nullptr,1,1)
   {}
-//   LDshrinker(const T m_,const T Ne_,const T cutoff_,
-// 	     Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RM> &hmat_,
-// 	     Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> > &map_):m(m_),
-// 									theta(calc_theta(m)),
-// 									cutoff(cutoff_),
-// 									Ne(Ne_),
-// 									mapd(map_.data(),map_.size()),
-//   									S(nullptr,map_.size(),map_.size()){
-//     if(!is_sorted(mapd.data(),mapd.data()+mapd.size(),std::less<T>())){
-//       Rcpp::stop("Recombination map must be non-decreasing\n");
-//     }
-//     const size_t p=mapd.size();
-//     if(hmat_.cols()!=p){
-//       Rcpp::stop("Reference panel data matrix must have column number equal to the size of genetic map");
-//     }
-//     Sdat.resize(p*p);
-//     S=Eigen::Map<Eigen::Array<T,Eigen::Dynamic,Eigen::Dynamic> >(Sdat.data(),p,p);
-//     S=calc_cov(hmat_);
-//   }
+
   LDshrinker(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> > &S_,
              Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,1> > &map_,
              const T m_,
@@ -161,15 +421,12 @@ public:
   }
   template<int RN>
   void calc_cov(Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RN> > mat, const bool isGeno){
-    const double GenoMult = isGeno ? 0.5 : 1;
+    const T GenoMult = isGeno ? 0.5 : 1;
     // hmata = hmata.rowwise()-hmata.colwise().mean();
     mat = mat.rowwise()-mat.colwise().mean();
     S = (((mat.adjoint()*mat)/(mat.rows()-1)))*GenoMult;
   }
-
-
   void Shrink(){
-    //    const size_t p=map.size();
     const int numSNP=mapd.size();
     T ti=0;
     T tshrinkage;
@@ -188,41 +445,3 @@ public:
 };
 
 
-template<typename Derived>
-void LD2df(const Eigen::MatrixBase<Derived> &ldmat,
-           const std::vector<std::string> &rsid,
-           std::vector<std::string> &rowsnp,
-           std::vector<std::string> &colsnp,
-           std::vector<double> &corv,
-           const double r2cutoff=0.01){
-  size_t p=ldmat.rows();
-  if(p!=ldmat.cols()){
-    Rcpp::stop("ldmat is not square!");
-  }
-  if(p!=rsid.size()){
-    Rcpp::stop("rsid must be of length p!");
-  }
-  size_t dfsize = (p*(p-1))/2;
-  if(corv.capacity()<dfsize){
-    corv.reserve(dfsize);
-  }
-  if(rowsnp.capacity()<dfsize){
-    rowsnp.reserve(dfsize);
-  }
-  if(colsnp.capacity()<dfsize){
-    colsnp.reserve(dfsize);
-  }
-  
-  
-  size_t k=0;
-  for(int i=0; i<p;i++){
-    for(int j=i+1; j<p;j++ ){
-      const double r2=ldmat.coeff(i,j)*ldmat.coeff(i,j);
-      if(r2>=r2cutoff){
-        corv.push_back(r2);
-        rowsnp.push_back(rsid[i]);
-        colsnp.push_back(rsid[j]);
-      }
-    }
-  }
-}
