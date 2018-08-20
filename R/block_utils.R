@@ -43,10 +43,19 @@ assign_snp_block <- function(snp_df,break_df=NULL,assign_all=T){
 #' @export
 #'
 #' @examples
-chunk_genome <- function(snp_df,n_chunks=10){
-  snp_df <- dplyr::group_by(snp_df,chr) %>% dplyr::mutate(t_region_id=gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n())) %>% dplyr::ungroup()
-  snp_df <- dplyr::distinct(snp_df,chr,t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
-  return(snp_df)
+chunk_genome <- function(snp_df,n_chunks=NA,chunk_size=NA,min_size=10){
+    stopifnot(!all(is.na(c(n_chunks,chunk_size))),!all(!is.na(c(n_chunks,chunk_size))))
+
+    if(!is.na(n_chunks)){
+        snp_df <- dplyr::group_by(snp_df,chr) %>%
+            dplyr::mutate(t_region_id=as.integer(gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n()))) %>% dplyr::ungroup()
+    }else{
+        snp_df <- dplyr::group_by(snp_df,chr) %>%
+            dplyr::mutate(t_region_id=as.integer(gl(n = ceiling(n()/chunk_size) ,k = chunk_size,length=n()))) %>% dplyr::ungroup()
+        snp_df <- group_by(snp_df,chr,t_region_id) %>% summarise(ct=n()) %>% ungroup() %>% inner_join(snp_df) %>% mutate(t_region_id=ifelse(ct<min_size,t_region_id-1,t_region_id)) %>% select(-ct) %>% ungroup()
+    }
+    snp_df <- dplyr::distinct(snp_df,chr,t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
+    return(snp_df)
 }
 
 
