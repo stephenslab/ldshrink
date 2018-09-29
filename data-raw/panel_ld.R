@@ -6,6 +6,8 @@ library(tidyverse)
 shrink_R <- read_2d_mat_h5("/home/nwknoblauch/Downloads/genotype2.mat","/","shrink_R")
 devtools::use_data(shrink_R)
 
+panel_url <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel"
+panel_ind <- read_delim(file = panel_url,delim = "\t",trim_ws = T)
 
 panel_mapfile <- "/media/nwknoblauch/Data/1kg/1000-genomes-genetic-maps/interpolated_from_hapmap/chr19.interpolated_genetic_map.gz"
 map_dat <- readr::read_delim(panel_mapfile,delim=" ",col_names=c("rsid","pos","map"))

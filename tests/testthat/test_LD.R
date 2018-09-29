@@ -50,7 +50,7 @@ test_that("Sparse and Dense implementations are equivalent for non-LDshrink",{
   mapdat <- cumsum(tmap)
   
   tLD <- cor(haplomat)
-  sLD <- sparse_LDshrink(scaled_data = scale(haplomat,center=T,scale=F),
+  sLD <- LDshrink::sparse_LDshrink(data = haplomat,
                          mapd = mapdat,m=85,Ne=11490.672741, cutoff = 0.001,useLDshrink = F)
   dsLD <- as.matrix(sLD)
   
@@ -65,26 +65,71 @@ test_that("Sparse and Dense implementations are equivalent for non-LDshrink",{
 
 
 test_that("Sparse and Dense implementations are equivalent",{
-  n <- 500
+  n <- 5000
   p <- 1100
   
   haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+  nhaplomat <- haplomat+0
   tmap <- runif(p)
   
   mapdat <- cumsum(tmap)
   
-  tLD <- LDshrink(haplomat,mapdat,na.rm = F)
-  sLD <- sparse_LDshrink(scaled_data = scale(haplomat,center=T,scale=F),
-                         mapd = mapdat,m=85,Ne=11490.672741, cutoff = 0.001)
+  tLD <- LDshrink::LDshrink(haplomat,mapdat,na.rm = F,m=85,Ne=11490.672741, cutoff = 0.001)
+  sLD <- LDshrink::sparse_LDshrink(data = nhaplomat,
+                         mapd = mapdat,m=85,Ne=11490.672741, cutoff = 0.001,useLDshrink=T,progress=F)
   dsLD <- as.matrix(sLD)
   
-  
-  # mb <- microbenchmark::microbenchmark(tLD = LDshrink(haplomat,mapdat,na.rm = F),
-  #                                      sLD = sparse_LDshrink(scaled_data = scale(haplomat,center=T,scale=F),
-  #                                                             mapd = mapdat,m=85,Ne=11490.672741, cutoff = 0.001))
-  expect_equivalent(tLD,dsLD,1e-3)
+  summary(c(tLD-dsLD))
+  expect_equivalent(tLD,dsLD,1e-4)
 })
 
+test_that("Sparse implementations are equivalent even when chunked",{
+  n <- 501
+  p <- 1100
+  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+  tmap <- runif(p)
+  mapdat <- cumsum(tmap)
+  rs <- as.character(1:p)
+  shap <- scale(haplomat,center=T,scale=F)
+  sLD <- ld2df(data = haplomat,
+               mapd = mapdat,
+                rsid = as.character(1:p),
+               m=85,Ne=11490.672741, cutoff = 0.001,r2cutoff = 0,useLDshrink=T) %>%
+    dplyr::arrange(rowsnp,colsnp,r2)
+  hap_a <- haplomat[,1:500]
+  hap_b <- haplomat[,-(1:500)]
+  map_a <- mapdat[1:500]
+  map_b <- mapdat[-(1:500)]
+  rs_a <- rs[1:500]
+  rs_b <- rs[-(1:500)]
+  
+  df_ab <- ld2df_p(data_a = hap_a,
+                   data_b = hap_b,
+                   mapd_a = map_a,
+                   mapd_b = map_b,
+                   rsid_a = rs_a,
+                   rsid_b = rs_b,
+                   m=85,
+                   Ne=11490.672741,
+                   cutoff = 0.001,r2cutoff = 0,
+                   useLDshrink = T)
+  df_aa <- ld2df(data = hap_a,
+                 mapd = map_a,
+                 rsid = rs_a,
+                 m=85,
+                 Ne=11490.672741,
+                 cutoff = 0.001,r2cutoff = 0,
+                 useLDshrink=T)
+  df_bb <- ld2df(data = hap_b,
+                 mapd = map_b,
+                 rsid = rs_b,
+                 m=85,
+                 Ne=11490.672741,
+                 cutoff = 0.001,r2cutoff = 0,
+                 useLDshrink=T)
+  df_p <- dplyr::bind_rows(df_aa,df_ab,df_bb) %>% dplyr::arrange(rowsnp,colsnp,r2)
+  expect_equal(df_p,sLD)
+})
 
 
 test_that("Equal to R implementation",{
@@ -127,63 +172,28 @@ RLD <- calcLDR(haplomat,mapdat)
 })
 
 
-test_that("LD2df correctly subsets", {
-  n <- 500
-  p <- 1100
-  p_tot <- (p^2-p)/2+p
-  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
-  tmap <- runif(p)
-  
-  mapdat <- cumsum(tmap)
-
-  tLDdf <- ld2df(LDshrink(haplomat,mapdat,na.rm = F,m = 85,Ne=11490.672741,cutoff=0.001),rsid = as.character(1:p),r2cutoff = 0.001)
-  nhaplomat <- scale(haplomat,center=T,scale=F)
-  nLDdf <- ld2df_p(scaled_data = nhaplomat,mapd = mapdat,rsid =as.character(1:p),m=85,Ne=11490.672741, cutoff = 0.001,r2cutoff = 0.001)
-  
-  nR <- matrix(NA,p,p)
-  nR[cbind(as.integer(tLDdf$rowsnp),as.integer(tLDdf$colsnp))] <- tLDdf$r2
-  cR <- matrix(NA,p,p)
-  cR[cbind(as.integer(nLDdf$rowsnp),as.integer(nLDdf$colsnp))] <- nLDdf$r2
-  testthat::expect_equal(nrow(nLDdf),nrow(tLDdf))
-  testthat::expect_equal(cR[upper.tri(cR)],nR[upper.tri(nR)],1e-4)
-})
-
-test_that("na.rm=T == na.rm==F",{
-  # library(LDshrink)
-  n <- 500
-  p <- 1100
-
-  haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
-  mapdat <- cumsum(runif(p))
-  #data("haplomat")
-  
-  #data("mapdat")
-  ahaplomat <- haplomat+0
-  bhaplomat <- haplomat+0
-  tLD <- LDshrink(ahaplomat,mapdat)
-  expect_equal(ahaplomat,haplomat)
-  fLD <- LDshrink(bhaplomat,mapdat,na.rm=F)
-  expect_equal(bhaplomat,haplomat)
-  aLD <- LDshrink(ahaplomat,mapdat,m,Ne,cutoff,na.rm=F,useAlt = T)
-  tmb <- microbenchmark::microbenchmark(aLD=LDshrink(bhaplomat,mapdat,na.rm=F,useAlt=T),times=50)
-  expect_equal(tLD,fLD)
-  expect_equal(aLD,tLD)
-})
+# test_that("LD2df correctly subsets", {
+#   n <- 500
+#   p <- 1100
+#   p_tot <- (p^2-p)/2+p
+#   haplomat <- matrix(sample(0:1,n*p,replace = T),n,p)
+#   tmap <- runif(p)
+#   
+#   mapdat <- cumsum(tmap)
+# 
+#   tLDdf <- ld2df(LDshrink(haplomat,mapdat,na.rm = F,m = 85,Ne=11490.672741,cutoff=0.001),rsid = as.character(1:p),r2cutoff = 0.001)
+#   nhaplomat <- scale(haplomat,center=T,scale=F)
+#   nLDdf <- ld2df_p(scaled_data = nhaplomat,mapd = mapdat,rsid =as.character(1:p),m=85,Ne=11490.672741, cutoff = 0.001,r2cutoff = 0.001)
+#   
+#   nR <- matrix(NA,p,p)
+#   nR[cbind(as.integer(tLDdf$rowsnp),as.integer(tLDdf$colsnp))] <- tLDdf$r2
+#   cR <- matrix(NA,p,p)
+#   cR[cbind(as.integer(nLDdf$rowsnp),as.integer(nLDdf$colsnp))] <- nLDdf$r2
+#   testthat::expect_equal(nrow(nLDdf),nrow(tLDdf))
+#   testthat::expect_equal(cR[upper.tri(cR)],nR[upper.tri(nR)],1e-4)
+# })
 
 
-test_that("alternative shrinkage",{
-  p <- 4
-  mapdat <- cumsum(runif(p))
-  m=85
-  Ne=11490.672741
-  cutoff = 0.001
-  adist <- altDist(mapdat,m,Ne,cutoff)
-  tdist <- trueDist(mapdat,m,Ne,cutoff)
-  expect_equal(adist,tdist)
-  
-  
-  
-})
 
 test_that("Equal to R implementation",{
   n <- 1000

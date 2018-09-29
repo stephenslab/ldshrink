@@ -1,7 +1,8 @@
-useDynLib(LDshrink,.registration=TRUE)
+useDynLib(LDshrink, .registration=TRUE)
 import(RcppEigen)
 importFrom(Rcpp, evalCpp)
 importFrom(RcppParallel, RcppParallelLibs)
 importFrom("utils", "data", "installed.packages")
+importFrom(magrittr, "%>%")
 exportPattern("^[[:alpha:]]+")
-importFrom(magrittr,"%>%")
+

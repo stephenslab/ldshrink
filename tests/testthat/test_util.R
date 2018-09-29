@@ -1,7 +1,7 @@
 context("utils")
 
-library(dplyr)
-data(break_df)
+# library(dplyr)
+# data(break_df)
 
 
 
@@ -41,7 +41,7 @@ test_that("flip all alleles for the same dataframe (but flipped)",{
   sample_df <- tibble::data_frame(ref=sample(c("A","C","G","T"),100,replace=T),alt=sample(c("A","C","G","T"),100,replace=T)) %>% 
     dplyr::filter(ref!=alt) %>% dplyr::sample_n(p,replace=T) 
   snp_df <- sample_df %>%tidyr::unite(allele,sep=",")
-  ld_df <- select(sample_df,alt,ref) %>%tidyr::unite(allele,sep=",")
+  ld_df <- dplyr::select(sample_df,alt,ref) %>%tidyr::unite(allele,sep=",")
   expect_true(all(flip_allele_exp(snp_df$allele,ld_df$allele)))
 })
 
@@ -59,36 +59,53 @@ test_that("report NA when alleles don't match",{
 })
 
 
+# 
+# 
+# test_that("can map variants to LD regions",{
+# 
+#   data("break_df")
+#   bad_reg <- dplyr::group_by(break_df,chr) %>% dplyr::slice(c(1)) %>% dplyr::mutate(stop=start,start=0) %>% dplyr::ungroup()
+#   bad_reg2 <- dplyr::group_by(break_df,chr) %>% dplyr::slice(n()) %>% dplyr::mutate(start=stop,stop=stop+100) %>% dplyr::ungroup()
+#   bad_reg <- dplyr::bind_rows(bad_reg,bad_reg2)
+#   make_snps <- function(chr,start,stop,...){
+#     n_snps <- sample(0:min(c(10,stop-start)),1)
+#     return(tibble::data_frame(chr=rep(chr,n_snps),pos=sort(sample((start+1):(stop-1),n_snps,replace=F))))
+#   }
+#   bad_snps <- purrr::pmap_dfr(bad_reg,make_snps) %>% dplyr::mutate(isbad=T)
+#   good_snps <- purrr::pmap_dfr(break_df,make_snps) %>% dplyr::mutate(isbad=F)
+#   all_snps <- dplyr::bind_rows(good_snps,bad_snps) %>% dplyr::arrange(chr,pos) %>% dplyr::distinct(chr,pos,.keep_all = T)
+#   
+#   
+#   all_snps <- assign_snp_block(snp_df = all_snps,break_df = break_df,assign_all=F)
+#   # all_snps <- dplyr::mutate(all_snps,region_id=reg_id)
+# 
+#   
+#   check_reg <- dplyr::inner_join(all_snps,break_df)
+#   # dplyr::filter(check_reg,!dplyr::between(pos,start,stop))
+#   good_res <- purrr::pmap_lgl(check_reg,function(pos,start,stop,...){
+#     dplyr::between(pos,start,stop)
+#   })
+#   expect_equal(all(good_res),T)
+# })
 
 
-test_that("can map variants to LD regions",{
 
-  data("break_df")
-  bad_reg <- dplyr::group_by(break_df,chr) %>% dplyr::slice(c(1)) %>% dplyr::mutate(stop=start,start=0) %>% dplyr::ungroup()
-  bad_reg2 <- dplyr::group_by(break_df,chr) %>% dplyr::slice(n()) %>% dplyr::mutate(start=stop,stop=stop+100) %>% dplyr::ungroup()
-  bad_reg <- dplyr::bind_rows(bad_reg,bad_reg2)
-  make_snps <- function(chr,start,stop,...){
-    n_snps <- sample(0:min(c(10,stop-start)),1)
-    return(tibble::data_frame(chr=rep(chr,n_snps),pos=sort(sample((start+1):(stop-1),n_snps,replace=F))))
+test_that("can chunk snp_df by number of chunks or chunksize",{
+  
+  # p <- 1000
+  gen_chrom <- function(ch,p){
+    tibble::data_frame(pos=sort(sample(1:(p*100),p,replace = F))) %>% dplyr::mutate(chr=ch)
   }
-  bad_snps <- purrr::pmap_dfr(bad_reg,make_snps) %>% dplyr::mutate(isbad=T)
-  good_snps <- purrr::pmap_dfr(break_df,make_snps) %>% dplyr::mutate(isbad=F)
-  all_snps <- dplyr::bind_rows(good_snps,bad_snps) %>% dplyr::arrange(chr,pos) %>% dplyr::distinct(chr,pos,.keep_all = T)
-  
-  
-  all_snps <- assign_snp_block(snp_df = all_snps,break_df = break_df,assign_all=F)
-  # all_snps <- dplyr::mutate(all_snps,region_id=reg_id)
-
-  
-  check_reg <- dplyr::inner_join(all_snps,break_df)
-  # dplyr::filter(check_reg,!dplyr::between(pos,start,stop))
-  good_res <- purrr::pmap_lgl(check_reg,function(pos,start,stop,...){
-    dplyr::between(pos,start,stop)
-  })
-  expect_equal(all(good_res),T)
+  mp <- sample(10^(seq(3,5,length.out = 50)),22,replace=F)
+  snp_df <- purrr::map2_dfr(1:22,mp,gen_chrom)
+  chunk_df <- chunk_genome(snp_df,n_chunks = 10)
+  all_chunk_df <- dplyr::group_by(chunk_df,chr) %>% dplyr::summarise(n_chunks=n_distinct(region_id))
+  expect_equal(unique(all_chunk_df$n_chunks),10)
+  chunk_df <- chunk_genome(snp_df,chunk_size = 100,min_size = 10)
+  all_chunk_df <- dplyr::group_by(chunk_df,region_id) %>% dplyr::summarise(region_size=n())
+  expect_gt(min(all_chunk_df$region_size),10)
+  expect_lte(max(all_chunk_df$region_size),110)
 })
-
-
 
 
 

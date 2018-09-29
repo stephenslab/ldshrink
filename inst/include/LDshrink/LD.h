@@ -26,6 +26,12 @@ inline double calc_theta(const double m){
   return((1/nmsum)/(2*m+1/nmsum));
 }
 
+
+
+
+
+
+
 template <typename T,int RN>
 class LDshrink_data{
  public:
@@ -88,8 +94,6 @@ class LDshrink_data{
     }
   }
 };
-
-
 
 
 template<typename T,int RN>

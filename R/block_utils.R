@@ -8,27 +8,72 @@
 #' @export
 #'
 #' @examples
-assign_snp_block <- function(snp_df,break_df=NULL,assign_all=T){
-  stopifnot(dplyr::group_by(snp_df,chr) %>% dplyr::summarise(all_sort=all(!is.unsorted(pos,strictly = T))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as),
-            min(snp_df$pos)>0,is.integer(snp_df$chr),is.integer(snp_df$pos))
-  if(is.null(break_df)){
-      liftover_allf <- system.file("fourier_ls-all.bed.gz",package="LDshrink")
-      break_df <- readr::read_delim(liftover_allf,delim="\t",trim_ws = T,col_names=c("chr","start","stop"))
-      break_df <- dplyr::mutate(break_df,chr=as.integer(gsub("chr","",chr))) %>% dplyr::mutate(region_id=1:n())
-  }else{
-   stopifnot(!is.null(break_df$chr),
-             !is.null(break_df$start),
-             !is.null(break_df$stop),
-             !is.null(break_df$region_id),
-             is.integer(break_df$chr),
-             is.integer(break_df$start),
-             is.integer(break_df$stop),
-     dplyr::group_by(break_df,chr) %>% dplyr::summarise(all_sort=all((!is.unsorted(start,strictly = T)) & (!is.unsorted(stop,strictly = T)))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as),
-             all(break_df$start<break_df$stop)
-             )
-  }
-  
-  return(dplyr::mutate(snp_df,region_id=set_ld_region(break_df,snp_df,assign_all = assign_all)))
+assign_snp_block <- function(snp_df, break_df=NULL, assign_all=T){
+  stopifnot(dplyr::group_by(snp_df, chr) %>% dplyr::summarise(all_sort=all(!is.unsorted(pos, strictly = T))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as), 
+            min(snp_df$pos)>0, is.integer(snp_df$chr), is.integer(snp_df$pos))
+  return(dplyr::mutate(snp_df, region_id=assign_region(break_df, snp_df, assign_all = assign_all)))
+}
+
+
+assign_region <- function(break_coord, snp_coord, assign_all){
+  UseMethod("assign_region")
+}
+
+assign_region.data.frame <- function(break_coord, snp_coord, assign_all){
+  stopifnot(!is.null(break_df$chr), 
+            !is.null(break_df$start), 
+            !is.null(break_df$stop),
+            !is.null(break_df$region_id),
+            is.integer(break_df$chr),
+            is.integer(break_df$start),
+            is.integer(break_df$stop),
+            dplyr::group_by(break_df, chr) %>%
+              dplyr::summarise(all_sort=all((!is.unsorted(start, strictly = T)) & (!is.unsorted(stop, strictly = T)))) %>%
+              dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as),
+            all(break_df$start<break_df$stop)
+  )
+  return(set_ld_region(break_coord, snp_coord, assign_all=assign_all))
+}
+
+
+
+assign_region.function <- function(break_coord, snp_coord, assign_all){
+  break_df <- break_coord()
+  stopifnot(!is.null(break_df$chr),
+            !is.null(break_df$start),
+            !is.null(break_df$stop),
+            !is.null(break_df$region_id),
+            is.integer(break_df$chr),
+            is.integer(break_df$start),
+            is.integer(break_df$stop),
+            dplyr::group_by(break_df, chr) %>% 
+              dplyr::summarise(all_sort=all((!is.unsorted(start, strictly = T)) & (!is.unsorted(stop, strictly = T)))) %>%
+              dplyr::summarise(as=all(all_sort)) %>%
+              dplyr::pull(as),
+            all(break_df$start<break_df$stop)
+  )
+  return(dplyr::mutate(snp_df, region_id=set_ld_region(break_df, snp_df, assign_all = assign_all)))
+}
+
+assign_region.NULL <- function(break_coord, snp_coord, assign_all){
+  liftover_allf <- system.file("fourier_ls-all.bed.gz", package="LDshrink")
+  break_df <- readr::read_delim(liftover_allf, delim="\t", trim_ws = T, skip=1, col_names=c("chr", "start", "stop"))
+  break_df <- dplyr::mutate(break_df, chr=as.integer(gsub("chr", "", chr))) %>% dplyr::mutate(region_id=1:n())
+  stopifnot(!is.null(break_df$chr),
+            !is.null(break_df$start),
+            !is.null(break_df$stop),
+            !is.null(break_df$region_id),
+            is.integer(break_df$chr),
+            is.integer(break_df$start),
+            is.integer(break_df$stop),
+            dplyr::group_by(break_df, chr) %>% dplyr::summarise(all_sort=all((!is.unsorted(start, strictly = T)) & (!is.unsorted(stop, strictly = T)))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as), 
+            all(break_df$start<break_df$stop)
+  )
+  return(dplyr::mutate(snp_df, region_id = set_ld_region(break_df, snp_df, assign_all = assign_all)))
+}
+
+assign_region.default <- function(break_coord, snp_coord, assign_all){
+  stop("Don't know how to assign region for break_df of type", class(break_coord)[[1]], call. = FALSE)
 }
 
 
@@ -43,23 +88,20 @@ assign_snp_block <- function(snp_df,break_df=NULL,assign_all=T){
 #' @export
 #'
 #' @examples
-chunk_genome <- function(snp_df,n_chunks=NA,chunk_size=NA,min_size=10){
-    stopifnot(!all(is.na(c(n_chunks,chunk_size))),!all(!is.na(c(n_chunks,chunk_size))))
+chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
+    stopifnot(!all(is.na(c(n_chunks, chunk_size))), !all(!is.na(c(n_chunks, chunk_size))))
 
     if(!is.na(n_chunks)){
-        snp_df <- dplyr::group_by(snp_df,chr) %>%
-            dplyr::mutate(t_region_id=as.integer(gl(n = n_chunks,k = ceiling(n()/n_chunks),length=n()))) %>% dplyr::ungroup()
+        snp_df <- dplyr::group_by(snp_df, chr) %>%
+            dplyr::mutate(t_region_id=as.integer(gl(n = n_chunks, k = ceiling(n()/n_chunks), length=n()))) %>% dplyr::ungroup()
     }else{
-        snp_df <- dplyr::group_by(snp_df,chr) %>%
-            dplyr::mutate(t_region_id=as.integer(gl(n = ceiling(n()/chunk_size) ,k = chunk_size,length=n()))) %>% dplyr::ungroup()
-        snp_df <- group_by(snp_df,chr,t_region_id) %>% summarise(ct=n()) %>% ungroup() %>% inner_join(snp_df) %>% mutate(t_region_id=ifelse(ct<min_size,t_region_id-1,t_region_id)) %>% select(-ct) %>% ungroup()
+        snp_df <- dplyr::group_by(snp_df, chr) %>%
+            dplyr::mutate(t_region_id=as.integer(gl(n = ceiling(n()/chunk_size) , k = chunk_size, length=n()))) %>% dplyr::ungroup()
+        snp_df <- group_by(snp_df, chr, t_region_id) %>% summarise(ct=n()) %>% ungroup() %>% inner_join(snp_df) %>% mutate(t_region_id=ifelse(ct<min_size, t_region_id-1, t_region_id)) %>% select(-ct) %>% ungroup()
     }
-    snp_df <- dplyr::distinct(snp_df,chr,t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
+    snp_df <- dplyr::distinct(snp_df, chr, t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
     return(snp_df)
 }
-
-
-
 
 
 
@@ -73,72 +115,29 @@ chunk_genome <- function(snp_df,n_chunks=NA,chunk_size=NA,min_size=10){
 #' @export
 #'
 #' @examples
-assign_map <- function(snp_df,map_df){
-  u_chr <- dplyr::distinct(snp_df,chr)
-  snp_dfl <- split(snp_df,snp_df$chr)
-  map_dfl <- dplyr::semi_join(map_df,u_chr,by="chr") %>% split(.$chr)
+assign_map <- function(snp_df, map_df){
+  u_chr <- dplyr::distinct(snp_df, chr)
+  snp_dfl <- split(snp_df, snp_df$chr)
+  map_dfl <- dplyr::semi_join(map_df, u_chr, by="chr") %>% split(.$chr)
   stopifnot(all(names(map_dfl)==names(snp_dfl)))
-  retdf <- purrr::map2_df(map_dfl,snp_dfl,~dplyr::mutate(.y,map=interpolate_map(.x$map,.x$pos,.y$pos)))
+  retdf <- purrr::map2_df(map_dfl, snp_dfl, ~dplyr::mutate(.y, map=interpolate_map(.x$map, .x$pos, .y$pos)))
   return(retdf)
 }
 
 
-#' Download 1000 genomes OMNI genetic map data
-#'
-#' @param pop population, see `Details`
-#' @param destination local pathname for destination
-#'
-#' @details `pop` can be one of `"ACB" "ASW" "CDX" "CEU" "CHB" "CHS" "CLM" "FIN" "GBR" "GIH" "IBS" "JPT" "KHV" "LWK" "MKK" "MXL" "PEL" "PUR" "REA" "TSI" "YRI"`
-#' @return pathname of downloaded file
-#' @export
-#'
-#' @examples 
-download_omni_map <- function(pop="CEU", destination_dir =tempdir()){
-  destination <- tempfile()
-  base_url <- "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/working/20130507_omni_recombination_rates/"
-  download.file(paste0(base_url,pop,"_omni_recombination_20130507.tar"),destfile = destination)
-  untar(destination,exdir=destination_dir)
-  result_files <- dir(file.path(destination_dir,pop),full.names = T)
-  return()
-}
-
-
-LDshrink_evd <- function(panel,map=NULL,m=85,
-                            Ne=11490.672741,
-                            cutoff=1e-3,
-                         useLDshrink=T,na.rm=F){
-#    stopifnot(ncol(panel)==len
-    isGeno <- max(panel,na.rm = na.rm)>1
-    if(useLDshrink){
-        S <- LDshrink(genotype_panel = panel,
-                      map_data = map,
-                      m = m,
-                      Ne = Ne,
-                      cutoff = cutoff,
-                      cov_2_cor = T,
-                      na.rm = na.rm)
-    }else{
-      S <- stats::cor(panel,use = "complete.obs")
-    }
-    N <- nrow(panel)
-    L2 <- colSums(S^2)-1
-    L2 <- L2-(1-L2)/(N-2)
-    evdR <- eigen(S)
-    return(list(R=S,L2=L2,D=evdR$values,Q=evdR$vectors))
-}
 
 
 
 
 
 
-
-flip_allele_exp <- function(allele_a,allele_b){
+#' 
+flip_allele_exp <- function(allele_a, allele_b){
   utf_i <- Vectorize(utf8ToInt)
-  data_df <- tibble::data_frame(allele_a=allele_a,allele_b=allele_b)
+  data_df <- tibble::data_frame(allele_a = allele_a, allele_b=allele_b)
   gwas_snp_df <- data_df %>%
-    tidyr::separate(allele_a,c("ref_a","alt_a")) %>%
-    tidyr::separate(allele_b,c("ref_b","alt_b")) %>%
+    tidyr::separate(allele_a, c("ref_a", "alt_a")) %>%
+    tidyr::separate(allele_b, c("ref_b", "alt_b")) %>%
     dplyr::mutate(
       ref_a=utf_i(tolower(ref_a)),
       alt_a=utf_i(tolower(alt_a)),
