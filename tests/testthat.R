@@ -1,4 +1,4 @@
 library(testthat)
-library(LDshrink)
+library(ldshrink)
 
-test_check("LDshrink")
+test_check("ldshrink")
