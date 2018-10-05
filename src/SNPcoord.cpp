@@ -1,4 +1,4 @@
-#include <range/v3/all.hpp>
+
 #include <LDshrink.h>
 #include<algorithm>
 #include <functional>
@@ -85,14 +85,21 @@ Rcpp::LogicalVector flip_allele(const Rcpp::IntegerVector &gwas_ref,
 
 //[[Rcpp::export]]
 bool sorted_snp_df(const Rcpp::DataFrame &snp_info){
-  using namespace ranges;
   const Rcpp::IntegerVector chr= snp_info["chr"];
   const Rcpp::IntegerVector pos= snp_info["pos"];
-  auto chr_r= make_iterator_range(chr.begin(),chr.end());
-  auto pos_r= make_iterator_range(pos.begin(),pos.end());
-  auto r = view::zip(chr_r,pos_r);
-  bool is_sorted_res = ranges::is_sorted(r);
-  return(is_sorted_res);
+
+  const size_t p=chr.size();
+    //std::vector<std::pair<int,int>> r(p);
+  std::pair<int,int> old_p{chr[0],pos[0]};
+  std::pair<int,int> new_p;
+  for(int i=1; i<p;i++){
+    new_p={chr[i],pos[i]};
+    if(new_p<old_p){
+      return(false);
+    }
+    old_p=new_p;
+  }
+  return(true);
 }
 
 

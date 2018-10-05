@@ -90,24 +90,20 @@ test_that("report NA when alleles don't match",{
 
 
 
-test_that("can chunk snp_df by number of chunks or chunksize",{
+test_that("can chunk snp_df by number of chunks or chunksize", {
   
   # p <- 1000
-  gen_chrom <- function(ch,p){
-    tibble::data_frame(pos=sort(sample(1:(p*100),p,replace = F))) %>% dplyr::mutate(chr=ch)
+    gen_chrom <- function(ch, p){
+
+    tibble::data_frame(pos=sort(sample(1:(p*100), p, replace = F))) %>% dplyr::mutate(chr=ch)
   }
-  mp <- sample(10^(seq(3,5,length.out = 50)),22,replace=F)
-  snp_df <- purrr::map2_dfr(1:22,mp,gen_chrom)
-  chunk_df <- chunk_genome(snp_df,n_chunks = 10)
-  all_chunk_df <- dplyr::group_by(chunk_df,chr) %>% dplyr::summarise(n_chunks=n_distinct(region_id))
-  expect_equal(unique(all_chunk_df$n_chunks),10)
-  chunk_df <- chunk_genome(snp_df,chunk_size = 100,min_size = 10)
-  all_chunk_df <- dplyr::group_by(chunk_df,region_id) %>% dplyr::summarise(region_size=n())
-  expect_gt(min(all_chunk_df$region_size),10)
-  expect_lte(max(all_chunk_df$region_size),110)
+  mp <- sample(10^(seq(3, 5, length.out = 50)), 22, replace=F)
+  snp_df <- purrr::map2_dfr(1:22, mp, gen_chrom)
+  chunk_df <- chunk_genome(snp_df, n_chunks = 10)
+  all_chunk_df <- dplyr::group_by(chunk_df, chr) %>% dplyr::summarise(n_chunks=dplyr::n_distinct(region_id))
+  expect_equal(unique(all_chunk_df$n_chunks), 10)
+  chunk_df <- chunk_genome(snp_df, chunk_size = 100, min_size = 10)
+  all_chunk_df <- dplyr::group_by(chunk_df, region_id) %>% dplyr::summarise(region_size=n())
+  expect_gt(min(all_chunk_df$region_size), 10)
+  expect_lte(max(all_chunk_df$region_size), 110)
 })
-
-
-
-  
-  
