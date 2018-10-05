@@ -6,3 +6,4 @@
 ^inst/snakemake_files/*$
 ^.projectile
 ^inst/ldetect_files/$
+^\.travis\.yml$
