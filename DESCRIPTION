@@ -5,7 +5,7 @@ Authors@R: c(person("Matthew","Stephens",role="aut",
                     email="mstephens@uchicago.edu"),
              person("Xin","He",role="aut",email="xinhe@uchicago.edu"),
              person("Peter","Carbonetto",role="aut",
-	            email="peter.carbonetto@gmail.com")
+	            email="peter.carbonetto@gmail.com"),
              person("Nicholas","Knoblauch",role="aut",
 	            email="nwknoblauch@uchicago.edu"),
              person("Xiang","Zhu",role=c("aut","cre"),
