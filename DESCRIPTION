@@ -1,15 +1,40 @@
-Package: LDshrink
+Package: ldshrink
+Encoding: UTF-8
 Type: Package
-Title: Implementation of Wen and Stephens 2010 LD shrinkage estimator
+Maintainer: Xiang Zhu <xiangzhu.nku@gmail.com>
+Authors@R: c(person("Matthew","Stephens",role="aut",email="mstephens@uchicago.edu"),
+             person("Xin","He",role="aut",email="xinhe@uchicago.edu"),
+             person("Nicholas","Knoblauch",role="aut",email="nwknoblauch@uchicago.edu"),
+             person("Xiang","Zhu",role=c("aut","cre"),email="xiangzhu@uchicago.edu")) 
+Title: A one-stop R package for shrinkage estimation of linkage disequilibrium
 Version: 1.0
 Date: 2017-05-31
-Author: Nicholas Knoblauch
-Maintainer: Nicholas Knoblauch <nwknoblauch@gmail.com>
-Description: Compute LD using the Wen and Stephens shrinkage estimator. Companion package to rssr.
-License: GPL (>= 3)
-Imports: Rcpp (>= 0.12.10), RcppEigen (>= 0.3.2.9.1),dplyr,progress,BBmisc,BH,magrittr,RcppParallel
-LinkingTo: Rcpp, RcppEigen,BH,RcppProgress,testthat,RcppParallel
-Suggests: testthat, knitr,rmarkdown
+Description: The R package 'ldshrink' implements TBA.
+	These methods can be applied to TBA.
+	Note that 'ldshrink' is a companion package to 'rssr'.
+Imports:
+	Rcpp (>= 0.12.10),
+	RcppEigen (>= 0.3.2.9.1),
+	dplyr,
+	progress,
+	BBmisc,
+	BH,
+	magrittr,
+	RcppParallel
+LinkingTo:
+	Rcpp,
+	RcppEigen,
+	BH,
+	RcppProgress,
+	testthat,
+	RcppParallel
+Suggests:
+	testthat,
+	knitr,
+	rmarkdown
+License: GPL (>=3)
 SystemRequirements: GNU make
+URL: https://github.com/stephenslab/ldshrink
+BugReports: https://github.com/stephenslab/ldshrink/issues
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1
