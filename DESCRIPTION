@@ -19,6 +19,7 @@ Imports:
 	BBmisc,
 	BH,
 	magrittr,
+	tidyr,
 	RcppParallel
 LinkingTo:
 	Rcpp,
