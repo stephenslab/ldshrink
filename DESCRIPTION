@@ -1,10 +1,9 @@
 Package: ldshrink
 Encoding: UTF-8
 Type: Package
-Maintainer: Xiang Zhu <xiangzhu.nku@gmail.com>
 Authors@R: c(person("Matthew","Stephens",role="aut",email="mstephens@uchicago.edu"),
              person("Xin","He",role="aut",email="xinhe@uchicago.edu"),
-             person("Nicholas","Knoblauch",role="aut",email="nwknoblauch@uchicago.edu"),
+             person("Nicholas","Knoblauch",role=c("aut","cre"),email="nwknoblauch@uchicago.edu"),
              person("Xiang","Zhu",role=c("aut","cre"),email="xiangzhu@uchicago.edu")) 
 Title: A one-stop R package for shrinkage estimation of linkage disequilibrium
 Version: 1.0
