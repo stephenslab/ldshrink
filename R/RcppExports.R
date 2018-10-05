@@ -2,53 +2,53 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 sparse_LDshrink <- function(data, mapd, indices, m, Ne, cutoff, total_size, progress = TRUE, useLDshrink = TRUE) {
-    .Call(`_LDshrink_sparse_LDshrink`, data, mapd, indices, m, Ne, cutoff, total_size, progress, useLDshrink)
+    .Call(`_ldshrink_sparse_LDshrink`, data, mapd, indices, m, Ne, cutoff, total_size, progress, useLDshrink)
 }
 
 sparse_LDshrink_p <- function(data_a, data_b, mapd_a, mapd_b, indices_a, indices_b, m, Ne, cutoff, total_size, progress = FALSE, useLDshrink = TRUE) {
-    .Call(`_LDshrink_sparse_LDshrink_p`, data_a, data_b, mapd_a, mapd_b, indices_a, indices_b, m, Ne, cutoff, total_size, progress, useLDshrink)
+    .Call(`_ldshrink_sparse_LDshrink_p`, data_a, data_b, mapd_a, mapd_b, indices_a, indices_b, m, Ne, cutoff, total_size, progress, useLDshrink)
 }
 
 ld2df <- function(data, mapd, rsid, m, Ne, cutoff, r2cutoff = 0.01, progress = FALSE, useLDshrink = TRUE) {
-    .Call(`_LDshrink_ld2df`, data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
+    .Call(`_ldshrink_ld2df`, data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
 }
 
 ld2df_p <- function(data_a, data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff = 0.01, progress = FALSE, useLDshrink = TRUE) {
-    .Call(`_LDshrink_ld2df_p`, data_a, data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
+    .Call(`_ldshrink_ld2df_p`, data_a, data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useLDshrink)
 }
 
 #' Calculate the constant theta, given `m`
 #' @param m a number indicating the size of the panel used to create the genetic map
 #' (if using `1000-genomes-genetic-maps` from europeans, this number is 85)
 calc_theta <- function(m) {
-    .Call(`_LDshrink_calc_theta_exp`, m)
+    .Call(`_ldshrink_calc_theta_exp`, m)
 }
 
 shrinkCov <- function(S, mapd, m, Ne, cutoff) {
-    .Call(`_LDshrink_shrinkCov`, S, mapd, m, Ne, cutoff)
+    .Call(`_ldshrink_shrinkCov`, S, mapd, m, Ne, cutoff)
 }
 
 fastLDshrink <- function(genotype_data, mapd, m, Ne, cutoff, isGeno = TRUE, cov_2_cor = TRUE) {
-    .Call(`_LDshrink_fastLDshrink`, genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor)
+    .Call(`_ldshrink_fastLDshrink`, genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor)
 }
 
 calcDist <- function(map) {
-    .Call(`_LDshrink_calcDist`, map)
+    .Call(`_ldshrink_calcDist`, map)
 }
 
 flip_allele <- function(gwas_ref, gwas_alt, ld_ref, ld_alt) {
-    .Call(`_LDshrink_flip_allele`, gwas_ref, gwas_alt, ld_ref, ld_alt)
+    .Call(`_ldshrink_flip_allele`, gwas_ref, gwas_alt, ld_ref, ld_alt)
 }
 
 sorted_snp_df <- function(snp_info) {
-    .Call(`_LDshrink_sorted_snp_df`, snp_info)
+    .Call(`_ldshrink_sorted_snp_df`, snp_info)
 }
 
 set_ld_region <- function(ld_regions, snp_info, assign_all = TRUE) {
-    .Call(`_LDshrink_set_ld_region`, ld_regions, snp_info, assign_all)
+    .Call(`_ldshrink_set_ld_region`, ld_regions, snp_info, assign_all)
 }
 
 interpolate_map <- function(map, map_pos, target_pos, progress = FALSE) {
-    .Call(`_LDshrink_interpolate_map`, map, map_pos, target_pos, progress)
+    .Call(`_ldshrink_interpolate_map`, map, map_pos, target_pos, progress)
 }
 

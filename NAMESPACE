@@ -1,4 +1,4 @@
-useDynLib(LDshrink, .registration=TRUE)
+useDynLib(ldshrink, .registration=TRUE)
 import(RcppEigen)
 importFrom(Rcpp, evalCpp)
 importFrom(RcppParallel, RcppParallelLibs)
