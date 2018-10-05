@@ -50,7 +50,7 @@ test_that("Sparse and Dense implementations are equivalent for non-LDshrink", {
   mapdat <- cumsum(tmap)
   
   tLD <- cor(haplomat)
-  sLD <- LDshrink::sparse_LDshrink(data = haplomat,
+  sLD <- ldshrink::sparse_LDshrink(data = haplomat,
                                    mapd = mapdat,
                                    indices=0:(p-1),
                                    m=85,
@@ -77,8 +77,8 @@ test_that("Sparse and Dense implementations are equivalent", {
   
   mapdat <- cumsum(tmap)
   
-  tLD <- LDshrink::LDshrink(haplomat, mapdat, na.rm = F, m=85, Ne=11490.672741, cutoff = 0.001)
-  sLD <- LDshrink::sparse_LDshrink(data = nhaplomat, indices=0:(p-1),total_size=p,
+  tLD <- ldshrink::LDshrink(haplomat, mapdat, na.rm = F, m=85, Ne=11490.672741, cutoff = 0.001)
+  sLD <- ldshrink::sparse_LDshrink(data = nhaplomat, indices=0:(p-1),total_size=p,
                          mapd = mapdat, m=85, Ne=11490.672741, cutoff = 0.001, useLDshrink=T, progress=F)
   dsLD <- as.matrix(sLD)
   
