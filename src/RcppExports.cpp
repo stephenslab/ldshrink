@@ -6,88 +6,6 @@
 
 using namespace Rcpp;
 
-// sparse_LDshrink
-SEXP sparse_LDshrink(Eigen::MatrixXd data, std::vector<double> mapd, Rcpp::IntegerVector indices, const double m, const double Ne, const double cutoff, const int total_size, const bool progress, const bool useLDshrink);
-RcppExport SEXP _ldshrink_sparse_LDshrink(SEXP dataSEXP, SEXP mapdSEXP, SEXP indicesSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP total_sizeSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd(mapdSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices(indicesSEXP);
-    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
-    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
-    Rcpp::traits::input_parameter< const int >::type total_size(total_sizeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
-    rcpp_result_gen = Rcpp::wrap(sparse_LDshrink(data, mapd, indices, m, Ne, cutoff, total_size, progress, useLDshrink));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sparse_LDshrink_p
-SEXP sparse_LDshrink_p(Eigen::MatrixXd data_a, Eigen::MatrixXd data_b, std::vector<double> mapd_a, std::vector<double> mapd_b, Rcpp::IntegerVector indices_a, Rcpp::IntegerVector indices_b, const double m, const double Ne, const double cutoff, const int total_size, const bool progress, const bool useLDshrink);
-RcppExport SEXP _ldshrink_sparse_LDshrink_p(SEXP data_aSEXP, SEXP data_bSEXP, SEXP mapd_aSEXP, SEXP mapd_bSEXP, SEXP indices_aSEXP, SEXP indices_bSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP total_sizeSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_a(data_aSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_b(data_bSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_a(mapd_aSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_b(mapd_bSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices_a(indices_aSEXP);
-    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices_b(indices_bSEXP);
-    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
-    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
-    Rcpp::traits::input_parameter< const int >::type total_size(total_sizeSEXP);
-    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
-    rcpp_result_gen = Rcpp::wrap(sparse_LDshrink_p(data_a, data_b, mapd_a, mapd_b, indices_a, indices_b, m, Ne, cutoff, total_size, progress, useLDshrink));
-    return rcpp_result_gen;
-END_RCPP
-}
-// ld2df
-Rcpp::DataFrame ld2df(Eigen::MatrixXd data, std::vector<double> mapd, Rcpp::RObject rsid, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useLDshrink);
-RcppExport SEXP _ldshrink_ld2df(SEXP dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd(mapdSEXP);
-    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid(rsidSEXP);
-    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
-    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
-    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
-    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df(data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useLDshrink));
-    return rcpp_result_gen;
-END_RCPP
-}
-// ld2df_p
-Rcpp::DataFrame ld2df_p(Eigen::MatrixXd data_a, Eigen::MatrixXd data_b, std::vector<double> mapd_a, std::vector<double> mapd_b, Rcpp::RObject rsid_a, Rcpp::RObject rsid_b, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useLDshrink);
-RcppExport SEXP _ldshrink_ld2df_p(SEXP data_aSEXP, SEXP data_bSEXP, SEXP mapd_aSEXP, SEXP mapd_bSEXP, SEXP rsid_aSEXP, SEXP rsid_bSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useLDshrinkSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_a(data_aSEXP);
-    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_b(data_bSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_a(mapd_aSEXP);
-    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_b(mapd_bSEXP);
-    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid_a(rsid_aSEXP);
-    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid_b(rsid_bSEXP);
-    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
-    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
-    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
-    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
-    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    Rcpp::traits::input_parameter< const bool >::type useLDshrink(useLDshrinkSEXP);
-    rcpp_result_gen = Rcpp::wrap(ld2df_p(data_a, data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useLDshrink));
-    return rcpp_result_gen;
-END_RCPP
-}
 // calc_theta_exp
 double calc_theta_exp(const double m);
 RcppExport SEXP _ldshrink_calc_theta_exp(SEXP mSEXP) {
@@ -114,9 +32,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// fastLDshrink
-Rcpp::NumericMatrix fastLDshrink(const Rcpp::NumericMatrix genotype_data, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff, const bool isGeno, const bool cov_2_cor);
-RcppExport SEXP _ldshrink_fastLDshrink(SEXP genotype_dataSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP isGenoSEXP, SEXP cov_2_corSEXP) {
+// fastldshrink
+Rcpp::NumericMatrix fastldshrink(const Rcpp::NumericMatrix genotype_data, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff, const bool isGeno, const bool cov_2_cor);
+RcppExport SEXP _ldshrink_fastldshrink(SEXP genotype_dataSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP isGenoSEXP, SEXP cov_2_corSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -127,7 +45,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
     Rcpp::traits::input_parameter< const bool >::type isGeno(isGenoSEXP);
     Rcpp::traits::input_parameter< const bool >::type cov_2_cor(cov_2_corSEXP);
-    rcpp_result_gen = Rcpp::wrap(fastLDshrink(genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor));
+    rcpp_result_gen = Rcpp::wrap(fastldshrink(genotype_data, mapd, m, Ne, cutoff, isGeno, cov_2_cor));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -139,6 +57,88 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::ArrayXd& >::type map(mapSEXP);
     rcpp_result_gen = Rcpp::wrap(calcDist(map));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sparse_ldshrink
+SEXP sparse_ldshrink(Eigen::MatrixXd data, std::vector<double> mapd, Rcpp::IntegerVector indices, const double m, const double Ne, const double cutoff, const int total_size, const bool progress, const bool useldshrink);
+RcppExport SEXP _ldshrink_sparse_ldshrink(SEXP dataSEXP, SEXP mapdSEXP, SEXP indicesSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP total_sizeSEXP, SEXP progressSEXP, SEXP useldshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd(mapdSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices(indicesSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const int >::type total_size(total_sizeSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useldshrink(useldshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(sparse_ldshrink(data, mapd, indices, m, Ne, cutoff, total_size, progress, useldshrink));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sparse_ldshrink_p
+SEXP sparse_ldshrink_p(Eigen::MatrixXd data_a, Eigen::MatrixXd data_b, std::vector<double> mapd_a, std::vector<double> mapd_b, Rcpp::IntegerVector indices_a, Rcpp::IntegerVector indices_b, const double m, const double Ne, const double cutoff, const int total_size, const bool progress, const bool useldshrink);
+RcppExport SEXP _ldshrink_sparse_ldshrink_p(SEXP data_aSEXP, SEXP data_bSEXP, SEXP mapd_aSEXP, SEXP mapd_bSEXP, SEXP indices_aSEXP, SEXP indices_bSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP total_sizeSEXP, SEXP progressSEXP, SEXP useldshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_a(data_aSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_b(data_bSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_a(mapd_aSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_b(mapd_bSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices_a(indices_aSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type indices_b(indices_bSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const int >::type total_size(total_sizeSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useldshrink(useldshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(sparse_ldshrink_p(data_a, data_b, mapd_a, mapd_b, indices_a, indices_b, m, Ne, cutoff, total_size, progress, useldshrink));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ld2df
+Rcpp::DataFrame ld2df(Eigen::MatrixXd data, std::vector<double> mapd, Rcpp::RObject rsid, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useldshrink);
+RcppExport SEXP _ldshrink_ld2df(SEXP dataSEXP, SEXP mapdSEXP, SEXP rsidSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useldshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd(mapdSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid(rsidSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useldshrink(useldshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df(data, mapd, rsid, m, Ne, cutoff, r2cutoff, progress, useldshrink));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ld2df_p
+Rcpp::DataFrame ld2df_p(Eigen::MatrixXd data_a, Eigen::MatrixXd data_b, std::vector<double> mapd_a, std::vector<double> mapd_b, Rcpp::RObject rsid_a, Rcpp::RObject rsid_b, const double m, const double Ne, const double cutoff, const double r2cutoff, const bool progress, const bool useldshrink);
+RcppExport SEXP _ldshrink_ld2df_p(SEXP data_aSEXP, SEXP data_bSEXP, SEXP mapd_aSEXP, SEXP mapd_bSEXP, SEXP rsid_aSEXP, SEXP rsid_bSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP r2cutoffSEXP, SEXP progressSEXP, SEXP useldshrinkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_a(data_aSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type data_b(data_bSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_a(mapd_aSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type mapd_b(mapd_bSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid_a(rsid_aSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RObject >::type rsid_b(rsid_bSEXP);
+    Rcpp::traits::input_parameter< const double >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const double >::type Ne(NeSEXP);
+    Rcpp::traits::input_parameter< const double >::type cutoff(cutoffSEXP);
+    Rcpp::traits::input_parameter< const double >::type r2cutoff(r2cutoffSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    Rcpp::traits::input_parameter< const bool >::type useldshrink(useldshrinkSEXP);
+    rcpp_result_gen = Rcpp::wrap(ld2df_p(data_a, data_b, mapd_a, mapd_b, rsid_a, rsid_b, m, Ne, cutoff, r2cutoff, progress, useldshrink));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -196,14 +196,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ldshrink_sparse_LDshrink", (DL_FUNC) &_ldshrink_sparse_LDshrink, 9},
-    {"_ldshrink_sparse_LDshrink_p", (DL_FUNC) &_ldshrink_sparse_LDshrink_p, 12},
-    {"_ldshrink_ld2df", (DL_FUNC) &_ldshrink_ld2df, 9},
-    {"_ldshrink_ld2df_p", (DL_FUNC) &_ldshrink_ld2df_p, 12},
     {"_ldshrink_calc_theta_exp", (DL_FUNC) &_ldshrink_calc_theta_exp, 1},
     {"_ldshrink_shrinkCov", (DL_FUNC) &_ldshrink_shrinkCov, 5},
-    {"_ldshrink_fastLDshrink", (DL_FUNC) &_ldshrink_fastLDshrink, 7},
+    {"_ldshrink_fastldshrink", (DL_FUNC) &_ldshrink_fastldshrink, 7},
     {"_ldshrink_calcDist", (DL_FUNC) &_ldshrink_calcDist, 1},
+    {"_ldshrink_sparse_ldshrink", (DL_FUNC) &_ldshrink_sparse_ldshrink, 9},
+    {"_ldshrink_sparse_ldshrink_p", (DL_FUNC) &_ldshrink_sparse_ldshrink_p, 12},
+    {"_ldshrink_ld2df", (DL_FUNC) &_ldshrink_ld2df, 9},
+    {"_ldshrink_ld2df_p", (DL_FUNC) &_ldshrink_ld2df_p, 12},
     {"_ldshrink_flip_allele", (DL_FUNC) &_ldshrink_flip_allele, 4},
     {"_ldshrink_sorted_snp_df", (DL_FUNC) &_ldshrink_sorted_snp_df, 1},
     {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},

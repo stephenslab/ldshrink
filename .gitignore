@@ -7,6 +7,7 @@ src/*.so
 src/*.dll
 .dir-locals.el
 compile_commands.json
+src/compile_commands.json
 inst/snakemake_files/*txt
 inst/snakemake_files/snakejob*
 .projectile
@@ -15,6 +16,7 @@ inst/snakemake_files/snakejob*
 src/#*
 **~
 .cquery
+.ccls
 *.snakemake*
 GTAGS
 GRTAGS

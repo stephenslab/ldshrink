@@ -56,7 +56,7 @@ assign_region.function <- function(break_coord, snp_coord, assign_all){
 }
 
 assign_region.NULL <- function(break_coord, snp_coord, assign_all){
-  liftover_allf <- system.file("fourier_ls-all.bed.gz", package="LDshrink")
+  liftover_allf <- system.file("fourier_ls-all.bed.gz", package="ldshrink")
   break_df <- readr::read_delim(liftover_allf, delim="\t", trim_ws = T, skip=1, col_names=c("chr", "start", "stop"))
   break_df <- dplyr::mutate(break_df, chr=as.integer(gsub("chr", "", chr))) %>% dplyr::mutate(region_id=1:n())
   stopifnot(!is.null(break_df$chr),

@@ -2,13 +2,13 @@ inlineCxxPlugin <- function(...) {
     ismacos <- Sys.info()[["sysname"]] == "Darwin"
     openmpflag <- if (ismacos) "" else "$(SHLIB_OPENMP_CFLAGS)"
     plugin <- Rcpp::Rcpp.plugin.maker(
-                  include.before = "#include <LDshrink.h>",
+                  include.before = "#include <ldshrink.h>",
                   libs           = paste(
                       openmpflag,
                       RcppParallel::RcppParallelLibs(),
                       "$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)"
                   ),
-                  package        = "LDshrink"
+                  package        = "ldshrink"
               )
     settings <- plugin()
     settings$env$PKG_CPPFLAGS <- paste("-I../inst/include", openmpflag)

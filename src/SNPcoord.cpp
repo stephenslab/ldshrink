@@ -1,6 +1,5 @@
-
-#include <LDshrink.h>
-#include<algorithm>
+#include "ldshrink.hpp"
+#include <algorithm>
 #include <functional>
 
 #include <progress.hpp>

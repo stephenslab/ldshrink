@@ -6,14 +6,14 @@ test_that("theta is computed correctly", {
   expect_equal(calc_theta(m), theta)
 })
 
-test_that("Equal to R implementation", {
+test_that("Dense ldshrink is equal to a toy R implementation", {
   n <- 500
   p <- 1100
   
   haplomat <- matrix(sample(0:1, n*p, replace = T), n, p)
   mapdat <- cumsum(runif(p))
 
-  tLD <- LDshrink(haplomat, mapdat, na.rm = F)
+  tLD <- ldshrink(haplomat, mapdat, na.rm = F)
   calcLDR <- function(hmata, mapa, m=85, Ne=11490.672741, cutoff = 0.001){
     S <- stats::cov(hmata)
     p <- length(mapa)
@@ -40,7 +40,7 @@ test_that("Equal to R implementation", {
 
 
 
-test_that("Sparse and Dense implementations are equivalent for non-LDshrink", {
+test_that("Sparse and Dense implementations are equivalent for non-ldshrink", {
   n <- 500
   p <- 1100
   
@@ -50,14 +50,14 @@ test_that("Sparse and Dense implementations are equivalent for non-LDshrink", {
   mapdat <- cumsum(tmap)
   
   tLD <- cor(haplomat)
-  sLD <- ldshrink::sparse_LDshrink(data = haplomat,
+  sLD <- ldshrink::sparse_ldshrink(data = haplomat,
                                    mapd = mapdat,
                                    indices=0:(p-1),
                                    m=85,
                                    Ne=11490.672741,
                                    cutoff = 0.001,
                                    total_size=p,
-                                   useLDshrink = F)
+                                   useldshrink = F)
   dsLD <- as.matrix(sLD)
   
 
@@ -77,9 +77,9 @@ test_that("Sparse and Dense implementations are equivalent", {
   
   mapdat <- cumsum(tmap)
   
-  tLD <- ldshrink::LDshrink(haplomat, mapdat, na.rm = F, m=85, Ne=11490.672741, cutoff = 0.001)
-  sLD <- ldshrink::sparse_LDshrink(data = nhaplomat, indices=0:(p-1),total_size=p,
-                         mapd = mapdat, m=85, Ne=11490.672741, cutoff = 0.001, useLDshrink=T, progress=F)
+  tLD <- ldshrink::ldshrink(haplomat, mapdat, na.rm = F, m=85, Ne=11490.672741, cutoff = 0.001)
+  sLD <- ldshrink::sparse_ldshrink(data = nhaplomat, indices=0:(p-1),total_size=p,
+                         mapd = mapdat, m=85, Ne=11490.672741, cutoff = 0.001, useldshrink=T, progress=F)
   dsLD <- as.matrix(sLD)
   
   summary(c(tLD-dsLD))
@@ -97,7 +97,7 @@ test_that("Sparse implementations are equivalent even when chunked", {
   sLD <- ld2df(data = haplomat,
                mapd = mapdat,
                 rsid = as.character(1:p),
-               m=85, Ne=11490.672741, cutoff = 0.001, r2cutoff = 0, useLDshrink=T) %>%
+               m=85, Ne=11490.672741, cutoff = 0.001, r2cutoff = 0, useldshrink=T) %>%
     dplyr::arrange(rowsnp, colsnp, r)
   hap_a <- haplomat[, 1:500]
   hap_b <- haplomat[, -(1:500)]
@@ -115,27 +115,27 @@ test_that("Sparse implementations are equivalent even when chunked", {
                    m=85,
                    Ne=11490.672741,
                    cutoff = 0.001, r2cutoff = 0,
-                   useLDshrink = T)
+                   useldshrink = T)
   df_aa <- ld2df(data = hap_a,
                  mapd = map_a,
                  rsid = rs_a,
                  m=85,
                  Ne=11490.672741,
                  cutoff = 0.001, r2cutoff = 0,
-                 useLDshrink=T)
+                 useldshrink=T)
   df_bb <- ld2df(data = hap_b,
                  mapd = map_b,
                  rsid = rs_b,
                  m=85,
                  Ne=11490.672741,
                  cutoff = 0.001,r2cutoff = 0,
-                 useLDshrink=T)
+                 useldshrink=T)
   df_p <- dplyr::bind_rows(df_aa,df_ab,df_bb) %>% dplyr::arrange(rowsnp,colsnp,r)
   expect_equal(df_p,sLD)
 })
 
 
-test_that("Equal to R implementation",{
+test_that("Equal to R implementation", {
   n <- 500
   p <- 1100
   
@@ -144,7 +144,7 @@ test_that("Equal to R implementation",{
   
   mapdat <- cumsum(tmap)
   
-  tLD <- LDshrink(haplomat,mapdat,na.rm = F)
+  tLD <- ldshrink(haplomat,mapdat,na.rm = F)
   calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){
     S <- stats::cov(hmata)
     p <- length(mapa)
@@ -184,7 +184,7 @@ RLD <- calcLDR(haplomat,mapdat)
 #   
 #   mapdat <- cumsum(tmap)
 # 
-#   tLDdf <- ld2df(LDshrink(haplomat,mapdat,na.rm = F,m = 85,Ne=11490.672741,cutoff=0.001),rsid = as.character(1:p),r2cutoff = 0.001)
+#   tLDdf <- ld2df(ldshrink(haplomat,mapdat,na.rm = F,m = 85,Ne=11490.672741,cutoff=0.001),rsid = as.character(1:p),r2cutoff = 0.001)
 #   nhaplomat <- scale(haplomat,center=T,scale=F)
 #   nLDdf <- ld2df_p(scaled_data = nhaplomat,mapd = mapdat,rsid =as.character(1:p),m=85,Ne=11490.672741, cutoff = 0.001,r2cutoff = 0.001)
 #   
@@ -198,7 +198,7 @@ RLD <- calcLDR(haplomat,mapdat)
 
 
 
-test_that("Equal to R implementation",{
+test_that("Equal to R implementation", {
   n <- 1000
   p <- 50
   
@@ -208,7 +208,7 @@ test_that("Equal to R implementation",{
   
   #data("mapdat")
   
-  tLD <- LDshrink(haplomat,mapdat,na.rm=T)
+  tLD <- ldshrink(haplomat,mapdat,na.rm=T)
   
 
   calcLDR <- function(hmata,mapa,m=85,Ne=11490.672741, cutoff = 0.001){

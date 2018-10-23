@@ -1,9 +1,5 @@
 context("utils")
 
-# library(dplyr)
-# data(break_df)
-
-
 
 test_that("linear indexing of symmetric matrices",{
   
@@ -111,3 +107,16 @@ test_that("can chunk snp_df by number of chunks or chunksize", {
   expect_gt(min(all_chunk_df$region_size), 10)
   expect_lte(max(all_chunk_df$region_size), 110)
 })
+
+
+
+test_that("genetic map interpolation works",{
+  
+  
+  
+  
+  
+})
+
+
+

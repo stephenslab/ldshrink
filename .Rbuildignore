@@ -5,5 +5,7 @@
 ^inst/snakemake_files/$
 ^inst/snakemake_files/*$
 ^.projectile
+compile_commands.json
+^src/compile_commands.json^
 ^inst/ldetect_files/$
 ^\.travis\.yml$
