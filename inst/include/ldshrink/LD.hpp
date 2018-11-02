@@ -26,6 +26,20 @@ inline double calc_theta(const double m){
   return((1/nmsum)/(2*m+1/nmsum));
 }
 
+
+
+// template<typename T, typename F,typename D=double,bool isDiag=false,int RN=Eigen::RowMajor> class data_class {
+//   const T data_source;
+//   const F anno_source;
+//   //  Eigen::Matrix<D,Eigen::Dynamic,Eigen::Dynamic,RN> scaled_data_source;
+
+
+
+
+// };
+
+
+
 template <typename T, int RN> class ldshrink_data {
 public:
   std::vector<T> map;
@@ -53,13 +67,12 @@ public:
       Rcpp::stop(
           "indices must be equal in size to the length of the genetic map");
     }
-
     if (p == N) {
       Rcpp::Rcerr << "Warning: genoype_data matrix is of dimension " << p << "x"
                   << p << ", assuming data is stored SNPxSample!";
     }
     if (!std::is_sorted(map.begin(), map.end(), std::less<T>())) {
-      Rcpp::stop("Recombination map must be non-decreasing\n");
+      atol("Recombination map must be non-decreasing\n");
     }
   }
   bool is_scaled;

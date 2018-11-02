@@ -32,6 +32,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ldshrink_cor
+SEXP ldshrink_cor(const Rcpp::List genotype_data, const Rcpp::List indices, const Rcpp::List options);
+RcppExport SEXP _ldshrink_ldshrink_cor(SEXP genotype_dataSEXP, SEXP indicesSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List >::type genotype_data(genotype_dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List >::type indices(indicesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(ldshrink_cor(genotype_data, indices, options));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sample_cor
+SEXP sample_cor(const Rcpp::List genotype_data, const Rcpp::List indices, const Rcpp::List options);
+RcppExport SEXP _ldshrink_sample_cor(SEXP genotype_dataSEXP, SEXP indicesSEXP, SEXP optionsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List >::type genotype_data(genotype_dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List >::type indices(indicesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List >::type options(optionsSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_cor(genotype_data, indices, options));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fastldshrink
 Rcpp::NumericMatrix fastldshrink(const Rcpp::NumericMatrix genotype_data, const Rcpp::NumericVector& mapd, const double m, const double Ne, const double cutoff, const bool isGeno, const bool cov_2_cor);
 RcppExport SEXP _ldshrink_fastldshrink(SEXP genotype_dataSEXP, SEXP mapdSEXP, SEXP mSEXP, SEXP NeSEXP, SEXP cutoffSEXP, SEXP isGenoSEXP, SEXP cov_2_corSEXP) {
@@ -50,12 +76,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // calcDist
-Eigen::MatrixXd calcDist(Eigen::ArrayXd& map);
+Eigen::MatrixXd calcDist(Eigen::VectorXd& map);
 RcppExport SEXP _ldshrink_calcDist(SEXP mapSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::ArrayXd& >::type map(mapSEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd& >::type map(mapSEXP);
     rcpp_result_gen = Rcpp::wrap(calcDist(map));
     return rcpp_result_gen;
 END_RCPP
@@ -198,6 +224,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_calc_theta_exp", (DL_FUNC) &_ldshrink_calc_theta_exp, 1},
     {"_ldshrink_shrinkCov", (DL_FUNC) &_ldshrink_shrinkCov, 5},
+    {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
+    {"_ldshrink_sample_cor", (DL_FUNC) &_ldshrink_sample_cor, 3},
     {"_ldshrink_fastldshrink", (DL_FUNC) &_ldshrink_fastldshrink, 7},
     {"_ldshrink_calcDist", (DL_FUNC) &_ldshrink_calcDist, 1},
     {"_ldshrink_sparse_ldshrink", (DL_FUNC) &_ldshrink_sparse_ldshrink, 9},
