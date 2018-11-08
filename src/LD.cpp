@@ -6,7 +6,7 @@
 #include "ldshrink.hpp"
 #include <memory>
 #include <progress.hpp>
-#include <mkl.h>
+//#include <mkl.h>
 
 #include <vector>
 
