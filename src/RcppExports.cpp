@@ -6,21 +6,6 @@
 
 using namespace Rcpp;
 
-// interpolate_genetic_map
-Rcpp::NumericVector interpolate_genetic_map(const Rcpp::NumericVector& map, const Rcpp::IntegerVector map_pos, const Rcpp::IntegerVector target_pos, const bool strict, const bool progress);
-RcppExport SEXP _ldshrink_interpolate_genetic_map(SEXP mapSEXP, SEXP map_posSEXP, SEXP target_posSEXP, SEXP strictSEXP, SEXP progressSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type map(mapSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type map_pos(map_posSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type target_pos(target_posSEXP);
-    Rcpp::traits::input_parameter< const bool >::type strict(strictSEXP);
-    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
-    rcpp_result_gen = Rcpp::wrap(interpolate_genetic_map(map, map_pos, target_pos, strict, progress));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ldshrink_cor
 SEXP ldshrink_cor(const Rcpp::NumericMatrix genotype_data, const Rcpp::NumericVector anno, const Rcpp::List options);
 RcppExport SEXP _ldshrink_ldshrink_cor(SEXP genotype_dataSEXP, SEXP annoSEXP, SEXP optionsSEXP) {
@@ -85,14 +70,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// interpolate_genetic_map
+Rcpp::NumericVector interpolate_genetic_map(const Rcpp::NumericVector& map, const Rcpp::IntegerVector map_pos, const Rcpp::IntegerVector target_pos, const bool strict, const bool progress);
+RcppExport SEXP _ldshrink_interpolate_genetic_map(SEXP mapSEXP, SEXP map_posSEXP, SEXP target_posSEXP, SEXP strictSEXP, SEXP progressSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type map(mapSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type map_pos(map_posSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type target_pos(target_posSEXP);
+    Rcpp::traits::input_parameter< const bool >::type strict(strictSEXP);
+    Rcpp::traits::input_parameter< const bool >::type progress(progressSEXP);
+    rcpp_result_gen = Rcpp::wrap(interpolate_genetic_map(map, map_pos, target_pos, strict, progress));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
     {"_ldshrink_sample_cor", (DL_FUNC) &_ldshrink_sample_cor, 3},
     {"_ldshrink_flip_allele", (DL_FUNC) &_ldshrink_flip_allele, 4},
     {"_ldshrink_sorted_snp_df", (DL_FUNC) &_ldshrink_sorted_snp_df, 1},
     {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},
+    {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {NULL, NULL, 0}
 };
 

@@ -85,7 +85,7 @@ ldshrink_evd <- function(panel, map=NULL, m=85,
                          useldshrink=T, na.rm=F,...){
     isGeno <- max(panel,na.rm = na.rm)>1
     if(useldshrink){
-        panel  <-  scale(panel,center=TRUE,scale=FALSE)
+        # panel  <-  scale(panel,center=TRUE,scale=FALSE)
         S <-estimate_LD(reference_panel = panel,
                         map = map,
                         method="ldshrink",
@@ -95,7 +95,7 @@ ldshrink_evd <- function(panel, map=NULL, m=85,
       S <- stats::cor(panel, use = "complete.obs")
     }
     N <- nrow(panel)
-    L2 <- estimate_LDscores(S)
+    L2 <- estimate_LDscores(S,N)
     evdR <- eigen(S)
     return(list(R=S, L2=L2, D=evdR$values, Q=evdR$vectors))
 }
@@ -111,7 +111,10 @@ ldshrink_evd <- function(panel, map=NULL, m=85,
 #' @export
 #'
 #' @examples
+#' 
+#' R <- estimate_LD(reference_panel=reference_genotype,map=reference_map)
+#' L2 <- estimate_LDscores(R,nrow(reference_genotype))
 estimate_LDscores <- function(R,N){
-  L2 <- colSums(S^2)-1
+  L2 <- colSums(R^2)-1
   L2-(1-L2)/(N-2)
 }
