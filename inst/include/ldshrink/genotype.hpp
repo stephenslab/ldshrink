@@ -14,7 +14,8 @@ class Genotype{
   size_t offset;
   std::unordered_map<T,s_data_v> data_buffer;
 public:
-  Genotype(const Rcpp::List data);
+  Genotype(const Rcpp::NumericMatrix data,const bool isGenotype=true);
+  Genotype(const Rcpp::List data,const bool isGenotype=true);
   Genotype(const Rcpp::List data,const Rcpp::List target,const bool isGenotype=true);
   void initialize(const std::pair<std::vector<T> ,std::vector<T> > &inp);
   datapair get(std::pair<T,T> index) const;

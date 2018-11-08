@@ -16,8 +16,15 @@ class LDshrinkCor{
   const double pre_mult;
   using	datapair=std::shared_ptr<std::pair<const Eigen::VectorXd,double> >;
 public:
-  LDshrinkCor(const double m_, const double ne_,const double cutoff_,const bool isGenotype=true):m(m_),ne(ne_),cutoff(cutoff_),GenoMult(isGenotype ?	0.5 : 1),theta(calc_theta(m)),pre_mult(        GenoMult * (1 - theta) * (1 - theta) + 0.5 * theta * (1 - 0.5 * theta)){
-    }
+  LDshrinkCor(const double m_, const double ne_,const double cutoff_,const bool isGenotype=true):
+    m(m_),
+    ne(ne_),
+    cutoff(cutoff_),
+    GenoMult(isGenotype ?	0.5 : 1),
+    theta(LDshrinkCor::calc_theta(m))
+    ,pre_mult(        GenoMult * (1 - theta) * (1 - theta) + 0.5 * theta * (1 - 0.5 * theta))
+  {
+  }
   double check(double map_dist)const{
     double rho = 4 * ne * (map_dist) / 100;
     rho = -rho / (2 * m);
@@ -30,8 +37,24 @@ public:
     const double& var_1 =inputs.first->second;
     const auto& x_2 =inputs.second->first;
     const double& var_2 =inputs.second->second;
-    return ((x_1.dot(x_2)/Nm1)*rho*GenoMult*(1-theta)*(1-theta))/(pre_mult*std::sqrt(var_1*var_2));
+    double r= ((x_1.dot(x_2)/Nm1)*rho*GenoMult*(1-theta)*(1-theta));
+    r=r/(pre_mult*std::sqrt(var_1*var_2));
+    return(r);
   };
+private:
+  static double calc_nmsum(const double m) {
+  int msize = (2 * (int)m - 1);
+  Eigen::ArrayXd tx(msize);
+  tx.setLinSpaced(msize, 1, (int)(2 * m - 1));
+  return (1 / tx).sum();
+  }
+
+  static double calc_theta(const double m){
+    double nmsum=calc_nmsum(m);
+    return((1/nmsum)/(2*m+1/nmsum));
+  }
+
+
 };
 
 
@@ -61,7 +84,7 @@ public:
     const double& var_1 =inputs.first->second;
     const auto& x_2 =inputs.second->first;
     const double& var_2 =inputs.second->second;
-    const double tcor =	(x_1.dot(x_2)/Nm1)/(std::sqrt(var_1*var_2));
-      return tcor*tcor >= cor_cutoff ? tcor : 0;
+    const double tcor =	((x_1.array()/std::sqrt(var_1)).matrix().dot((x_2.array()/std::sqrt(var_2)).matrix()))/Nm1;
+    return tcor*tcor >= cor_cutoff ? tcor : 0;
   };
 };

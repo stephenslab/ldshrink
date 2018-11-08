@@ -3,7 +3,7 @@
 
 // The Genotype class acts as an intermediary between the data (either on disk or in R), and the ldshrink algorithm
 // This means doing any	precomputations	necessary (including subsetting rows or columns if provided)
-Genotype::Genotype(const Rcpp::List data):isGeno(!value_or<bool>(data,"is_haplotype",false)),offset(0){
+Genotype::Genotype(const Rcpp::List data,const bool isGenotype):isGeno(isGenotype),offset(0){
   using namespace Rcpp;
   if (data.size() == 2) {
       this->validate(as<Eigen::Map<Eigen::MatrixXd> >(data["data"]),as<Eigen::Map<Eigen::ArrayXi>>(data["snp_index"]));
@@ -17,12 +17,24 @@ Genotype::Genotype(const Rcpp::List data):isGeno(!value_or<bool>(data,"is_haplot
   }
 }
 
+Genotype::Genotype(const Rcpp::NumericMatrix data,const bool isGenotype):isGeno(isGenotype),offset(0){
+  using namespace Rcpp;
+  auto data_mat = as<Eigen::Map<Eigen::MatrixXd>>(data);
+  const size_t max_p=data_mat.cols();
+  Eigen::ArrayXi data_ind =Eigen::ArrayXi::LinSpaced(max_p,1,max_p);
+  auto mapi= Eigen::Map<Eigen::ArrayXi>(data_ind.data(),data_ind.size());
+  this->validate(data_mat, mapi);
 
+}
 
 Genotype::Genotype(const Rcpp::List data,const Rcpp::List target,const bool isGenotype):isGeno(isGenotype),offset(0){
   using namespace Rcpp;
   //  if (data.size() == 1) {
-    this->validate(as<Eigen::Map<Eigen::MatrixXd>>(data["data"]),as<Eigen::Map<Eigen::ArrayXi>>(target["snp_index"]));
+  auto data_mat =as<Eigen::Map<Eigen::MatrixXd>>(data["data"]);
+  const size_t max_p=data_mat.cols();
+  auto data_ind =value_or<Eigen::ArrayXi>(target,"snp_index",Eigen::ArrayXi::LinSpaced(max_p,1,max_p));
+  auto mapi= Eigen::Map<Eigen::ArrayXi>(data_ind.data(),data_ind.size());
+  this->validate(data_mat,mapi);
   // } else {
   //   this->validate(
   //       as<Eigen::Map<Eigen::MatrixXd>>(as<List>(data[1])["data"]),

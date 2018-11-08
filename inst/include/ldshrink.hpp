@@ -1,7 +1,7 @@
 #pragma once
 #define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
-#include "xtensor/xmath.hpp"          // xtensor import for the C++ universal functions
-#include "xtensor-r/rarray.hpp"       // R bindings
+//#include "xtensor/xmath.hpp"          // xtensor import for the C++ universal functions
+//#include "xtensor-r/rarray.hpp"       // R bindings
 
 //[[Rcpp]]
 #include<RcppCommon.h>
@@ -19,6 +19,7 @@ namespace Rcpp{
 
 
 #include <RcppEigen.h>
+
 
 #include "ldshrink/LD.hpp"
 #include "ldshrink/misc.hpp"

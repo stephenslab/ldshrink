@@ -6,51 +6,22 @@
 #include "ldshrink.hpp"
 #include <memory>
 #include <progress.hpp>
+#include <mkl.h>
 
 #include <vector>
 
-// [[Rcpp::depends(BH)]]
-
-
-//' Calculate the constant theta, given `m`
-//'
-//' `calc_theta` is used to calculate the shrinkage coefficient	used by LDshrink
-//'
-//' @param m a number indicating the size of the panel used to create the
-//genetic map ' (if using `1000-genomes-genetic-maps` from europeans, this
-//number is 85)
-//' @export
-//[[Rcpp::export(name="calc_theta")]]
-double calc_theta_exp(const double m) { return (calc_theta(m)); }
-
-//[[Rcpp::export]]
-Rcpp::NumericMatrix shrinkCov(const Rcpp::NumericMatrix S,
-                              const Rcpp::NumericVector &mapd, const double m,
-                              const double Ne, const double cutoff) {
-  const size_t p = mapd.size();
-  Rcpp::NumericMatrix nS(Rcpp::clone(S));
-  Eigen::Map<Eigen::MatrixXd> mS(&nS(0, 0), p, p);
-  Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> mmap(&mapd(0), p);
-  ldshrinker<double> lds(mS, mmap, m, Ne, cutoff);
-  lds.Shrink();
-  return (nS);
-}
 
 
 
 
-template<typename CovFun >
-LDshrinkWriter new_ldshrink(Genotype data,
+template<typename CovFun>
+LDshrinkWriter ldshrink(Genotype data,
 			    const SingleList input,
-			    const std::string anno_name,
 			    const CovFun &cov_f,
+			    const DistAnnoVec &anno,
 			    const bool write_annotations=false,
 			    const bool progress = false){
 
-
-
-
-  const DistAnnoVec anno(input.get_list_elem<REALSXP>(anno_name));
   auto id_pair=std::make_pair(input.get_idx_row(),input.get_idx_col());
   auto name_pair=std::make_pair(input.get_names_row(),input.get_names_col());
   LDshrinkWriter output(id_pair,name_pair,write_annotations);
@@ -80,7 +51,7 @@ LDshrinkWriter new_ldshrink(Genotype data,
   return (output);
 }
 
-//' Internal
+//' Internal implementation of ldshrink
 //'
 //'
 //' @param m a number indicating the size of the panel used to create the
@@ -88,29 +59,30 @@ LDshrinkWriter new_ldshrink(Genotype data,
 //number is 85)
 //' @export
 //[[Rcpp::export]]
-SEXP ldshrink_cor(const Rcpp::List genotype_data, const Rcpp::List indices,
+SEXP ldshrink_cor(const Rcpp::NumericMatrix genotype_data,
+		  const Rcpp::NumericVector anno,
                   const Rcpp::List options) {
 
   using namespace Rcpp;
   using index_t = int;
+  const DistAnnoVec annov(anno);
   const bool isGeno = !(value_or<bool>(options,"is_haplotype", false));
   const bool write_anno = (value_or<bool>(options,"write_annotations", false));
   const bool progress = (value_or<bool>(options,"progress", false));
   std::string output_type =
     value_or<std::string>(options,"output", "data.frame");
-  Genotype geno_data(genotype_data, indices, isGeno);
-  SingleList target_snps(indices);
+  Genotype geno_data(genotype_data, isGeno);
+  StringVector geno_names=colnames(genotype_data);
+  SingleList target_snps(geno_names);
   double m = as<double>(options["m"]);
   double Ne = as<double>(options["Ne"]);
   double cutoff = as<double>(options["cutoff"]);
   LDshrinkCor cov_fun(m, Ne, cutoff, isGeno);
-  LDshrinkWriter result = new_ldshrink(geno_data, target_snps, "map", cov_fun,write_anno,progress);
+  LDshrinkWriter result = ldshrink(geno_data, target_snps, cov_fun,annov,write_anno,progress);
   return (result.toType(output_type));
 }
 
-
-
-//' Internal
+//' Internal implementation of sample correlation
 //'
 //'
 //' @param m a number indicating the size of the panel used to create the
@@ -118,52 +90,27 @@ SEXP ldshrink_cor(const Rcpp::List genotype_data, const Rcpp::List indices,
 //number is 85)
 //' @export
 //[[Rcpp::export]]
-SEXP sample_cor(const Rcpp::List genotype_data, const Rcpp::List indices,
-                  const Rcpp::List options) {
+SEXP sample_cor(const Rcpp::NumericMatrix genotype_data,
+                const Rcpp::NumericVector anno, const Rcpp::List options) {
 
   using namespace Rcpp;
 
-
-    const bool isGeno = !(value_or<bool>(options,"is_haplotype", false));
-  const bool write_anno = (value_or<bool>(options,"write_annotations", false));
+  const DistAnnoVec annov(anno);
+  const bool isGeno = !(value_or<bool>(options, "is_haplotype", false));
+  const bool write_anno = (value_or<bool>(options, "write_annotations", false));
+  const bool progress = (value_or<bool>(options, "progress", false));
   const std::string output_type =
-    value_or<std::string>(options,"output", "data.frame");
-  const double dist_cutoff   = value_or<double>(options,"dist_cutoff", 10000000000000);
-  const double cor_cutoff   = value_or<double>(options,"cor_cutoff", 0);
+      value_or<std::string>(options, "output", "data.frame");
+  const double dist_cutoff =
+      value_or<double>(options, "dist_cutoff", 10000000000000);
+  const double cor_cutoff = value_or<double>(options, "cor_cutoff", 0);
 
-  const bool progress = (value_or<bool>(options,"progress", false));
+  Genotype geno_data(genotype_data, isGeno);
+  StringVector geno_names = colnames(genotype_data);
+  SingleList target_snps(geno_names);
 
-
-  Genotype geno_data(genotype_data, indices, isGeno);
-  SingleList target_snps(indices);
-  SampleCor cov_fun(dist_cutoff,cor_cutoff);
-  LDshrinkWriter result = new_ldshrink(geno_data, target_snps, "pos", cov_fun,write_anno,progress);
-  return (result.toDataFrame());
-}
-
-
-
-
-//[[Rcpp::export]]
-Rcpp::NumericMatrix fastldshrink(const Rcpp::NumericMatrix genotype_data,
-                                 const Rcpp::NumericVector &mapd,
-                                 const double m, const double Ne,
-                                 const double cutoff, const bool isGeno = true,
-                                 const bool cov_2_cor = true) {
-  const size_t p = mapd.size();
-  Rcpp::NumericMatrix nS(p, p);
-  Eigen::Map<Eigen::MatrixXd> mS(&nS(0, 0), p, p);
-  Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> mmap(&mapd(0), p);
-  ldshrinker<double> lds(mS, mmap, m, Ne, cutoff, genotype_data, isGeno);
-  lds.Shrink();
-  if (cov_2_cor) {
-    lds.cov_2_cor();
-  }
-  return (nS);
-}
-
-//[[Rcpp::export]]
-Eigen::MatrixXd calcDist(Eigen::VectorXd &map) {
-  const size_t p = map.size();
-  return (((map.transpose().colwise().replicate(p)).colwise() - map));
+  SampleCor cov_fun(dist_cutoff, cor_cutoff);
+  LDshrinkWriter result =
+      ldshrink(geno_data, target_snps, cov_fun, anno, write_anno, progress);
+  return (result.toType(output_type));
 }

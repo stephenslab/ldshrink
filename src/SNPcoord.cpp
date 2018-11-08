@@ -7,14 +7,10 @@
 #include <tuple>
 //[[Rcpp::plugins(cpp14)]]
 // [[Rcpp::depends(RcppProgress)]]
-
-
-
 struct SNPpos{
   std::pair<int,int> c_p;
   SNPpos(const int chrom,const int pos):c_p(std::make_pair(chrom,pos)){};
 };
-
 
 struct GRange{
   std::pair<SNPpos,SNPpos> range;

@@ -37,4 +37,4 @@ SystemRequirements: GNU make
 URL: https://github.com/stephenslab/ldshrink
 BugReports: https://github.com/stephenslab/ldshrink/issues
 VignetteBuilder: knitr
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.0.9000

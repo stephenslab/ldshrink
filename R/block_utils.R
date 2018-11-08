@@ -6,8 +6,6 @@
 #'
 #' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
 #' @export
-#'
-#' @examples
 assign_snp_block <- function(snp_df, break_df=NULL, assign_all=T){
   stopifnot(dplyr::group_by(snp_df, chr) %>% dplyr::summarise(all_sort=all(!is.unsorted(pos, strictly = T))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as), 
             min(snp_df$pos)>0, is.integer(snp_df$chr), is.integer(snp_df$pos))
@@ -86,8 +84,6 @@ assign_region.default <- function(break_coord, snp_coord, assign_all){
 #'
 #' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
 #' @export
-#'
-#' @examples
 chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
     stopifnot(!all(is.na(c(n_chunks, chunk_size))), !all(!is.na(c(n_chunks, chunk_size))))
 
@@ -108,30 +104,25 @@ chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
 #' Assign or Interpolate Genetic Map Values
 #'
 #' @param snp_df 
-#' @param map_df dataframe of LD blocks, if `NULL`, use precomputed (EUR) ldshrink LD blocks
+#' @param map_df dataframe of reference genetic map values
 #' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
-#'
-#' @return
+#' @return a modified `snp_df` with an additional column giving the interpolated genetic map values at each locus
 #' @export
-#'
-#' @examples
-assign_map <- function(snp_df, map_df){
+assign_genetic_map <- function(snp_df, map_df, strict=FALSE){
   u_chr <- dplyr::distinct(snp_df, chr)
   snp_dfl <- split(snp_df, snp_df$chr)
   map_dfl <- dplyr::semi_join(map_df, u_chr, by="chr") %>% split(.$chr)
   stopifnot(all(names(map_dfl)==names(snp_dfl)))
-  retdf <- purrr::map2_df(map_dfl, snp_dfl, ~dplyr::mutate(.y, map=interpolate_map(.x$map, .x$pos, .y$pos)))
+  retdf <- purrr::map2_df(map_dfl, snp_dfl, ~dplyr::mutate(.y, map=interpolate_genetic_map(.x$map, .x$pos, .y$pos)))
   return(retdf)
 }
 
 
+calc_theta <- function(m){
+  nmsum <- sum(1 / (1:(2*m-1)))
+  (1/nmsum) / (2*m + 1/nmsum)
+}
 
-
-
-
-
-
-#' 
 flip_allele_exp <- function(allele_a, allele_b){
   utf_i <- Vectorize(utf8ToInt)
   data_df <- tibble::data_frame(allele_a = allele_a, allele_b=allele_b)

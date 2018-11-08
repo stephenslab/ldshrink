@@ -60,7 +60,7 @@ public:
   void write_nsymm(const std::pair<T,T> idx,const double res,const double annom);
   Eigen::SparseMatrix<double> sparseMatrix() const;
   void finalize();
-  Rcpp::S4 dsCMatrix() const;
+  SEXP dsCMatrix() const;
   Rcpp::DataFrame toDataFrame(const bool use_rownames=true)const;
   Rcpp::DataFrame toAnnotationDataFrame(const bool use_rownames)const;
   SEXP toType(const std::string	output_type)const;

@@ -14,17 +14,7 @@
 #include <RcppParallel.h>
 //#include <tbb/tbb.h>
 
-inline double calc_nmsum(const double m) {
-  int msize = (2 * (int)m - 1);
-  Eigen::ArrayXd tx(msize);
-  tx.setLinSpaced(msize, 1, (int)(2 * m - 1));
-  return (1 / tx).sum();
-}
 
-inline double calc_theta(const double m){
-  double nmsum=calc_nmsum(m);
-  return((1/nmsum)/(2*m+1/nmsum));
-}
 
 
 

@@ -172,11 +172,11 @@ Eigen::SparseMatrix<double> LDshrinkWriter::sparseMatrix() const {
   return (object);
 }
 
-Rcpp::S4 LDshrinkWriter::dsCMatrix() const {
+SEXP LDshrinkWriter::dsCMatrix() const {
   auto object = this->sparseMatrix();
   using namespace Rcpp;
   const int nnz = object.nonZeros();
-  Rcpp::Rcerr << "Number of entries: " << nnz << std::endl;
+  //  Rcpp::Rcerr << "Number of entries: " << nnz << std::endl;
   S4 ans("dsCMatrix");
   ans.slot("Dim") = Dimension(object.rows(), object.cols());
   ans.slot("i") =

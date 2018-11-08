@@ -4,20 +4,26 @@
 
 
 class ConstantGeneticMap{
-  const std::map<int,double> genmap;
   const bool strict;
+  using	idmap=std::map<int,double>;
+  const idmap genmap;
 public:
   ConstantGeneticMap(const Rcpp::IntegerVector &pos_vec,
                      const Rcpp::NumericVector &map_vec,
 		     const bool strict_);
   double interpolate(const int pos)const;
+private:
+  double linear_interp(const idmap::const_iterator prev_p,const idmap::const_iterator next_p, const int pos) const;
+  double interpolate_prev(const int pos) const;
+  double interpolate_post(const int pos) const;
+
 };
 
 
 
-Rcpp::XPtr<ConstantGeneticMap>
-new_constantmap(const Rcpp::NumericVector map_data,
-                const Rcpp::IntegerVector map_pos);
+// Rcpp::XPtr<ConstantGeneticMap>
+// new_constantmap(const Rcpp::NumericVector map_data,
+//                 const Rcpp::IntegerVector map_pos);
 
 
 class DistAnnoVec{
