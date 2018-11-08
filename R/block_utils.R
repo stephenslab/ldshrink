@@ -113,7 +113,7 @@ assign_genetic_map <- function(snp_df, map_df, strict=FALSE){
   snp_dfl <- split(snp_df, snp_df$chr)
   map_dfl <- dplyr::semi_join(map_df, u_chr, by="chr") %>% split(.$chr)
   stopifnot(all(names(map_dfl)==names(snp_dfl)))
-  retdf <- purrr::map2_df(map_dfl, snp_dfl, ~dplyr::mutate(.y, map=interpolate_genetic_map(.x$map, .x$pos, .y$pos)))
+  retdf <- purrr::map2_df(map_dfl, snp_dfl, ~dplyr::mutate(.y, map=interpolate_genetic_map(.x$map, .x$pos, .y$pos,strict=strict)))
   return(retdf)
 }
 
