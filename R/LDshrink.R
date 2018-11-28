@@ -90,7 +90,7 @@ ldshrink_evd <- function(panel, map=NULL, m=85,
                         map = map,
                         method="ldshrink",
                         method_ld_params=list(m = m,Ne = Ne,cutoff = cutoff),
-                        output="matrix",...)
+                        output="matrix",isGenotype = isGeno,...)
     }else{
       S <- stats::cor(panel, use = "complete.obs")
     }
