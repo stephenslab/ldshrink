@@ -8,5 +8,4 @@
 #' @importFrom Rcpp sourceCpp
 NULL
 #' @import RcppEigen
-#' @useDynLib ldshrink
 "_PACKAGE"

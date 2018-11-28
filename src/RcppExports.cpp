@@ -85,6 +85,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// round_trip_skyline_t
+SEXP round_trip_skyline_t(Rcpp::NumericMatrix r_mat, const std::string to_t);
+RcppExport SEXP _ldshrink_round_trip_skyline_t(SEXP r_matSEXP, SEXP to_tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type r_mat(r_matSEXP);
+    Rcpp::traits::input_parameter< const std::string >::type to_t(to_tSEXP);
+    rcpp_result_gen = Rcpp::wrap(round_trip_skyline_t(r_mat, to_t));
+    return rcpp_result_gen;
+END_RCPP
+}
+
+RcppExport SEXP run_testthat_tests();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
@@ -93,6 +107,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_sorted_snp_df", (DL_FUNC) &_ldshrink_sorted_snp_df, 1},
     {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},
     {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
+    {"_ldshrink_round_trip_skyline_t", (DL_FUNC) &_ldshrink_round_trip_skyline_t, 2},
+    {"run_testthat_tests",                (DL_FUNC) &run_testthat_tests,                0},
     {NULL, NULL, 0}
 };
 

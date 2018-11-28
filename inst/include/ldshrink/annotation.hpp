@@ -30,8 +30,8 @@ class DistAnnoVec{
   const std::vector<double> annot;
 public:
   DistAnnoVec(const Rcpp::NumericVector genmap) : annot(Rcpp::as<std::vector<double> >(genmap)) {}
-  double get(const std::pair<int, int> idx) const {
-    return (std::fabs(annot[idx.first] - annot[idx.second]));
+  double get(const std::array<int,2> idx) const {
+    return (std::fabs(annot[idx[0]] - annot[idx[1]]));
   }
 };
 

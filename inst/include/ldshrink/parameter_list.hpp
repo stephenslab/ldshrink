@@ -34,18 +34,16 @@ public:
 	       return (std::move(ret));
 	     }()),
       loop_size((p * p - p) / 2 + p) {}
-  vectype get_idx_row() const {
-    return (list_a);
-  }
-  vectype get_idx_col() const {
+  const vectype& get_idx_row() const { return (list_a); }
+  const vectype& get_idx_col() const {
     return (list_a);
   }
   idtype get_names_col() const { return (snp_names); }
   idtype get_names_row() const { return (snp_names); }
-  std::pair<T,T> get_idx(const size_t k)const{
+  std::array<T,2> get_idx(const size_t k)const{
     size_t i = floor((2 * p + 1 - sqrt((2 * p + 1) * (2 * p + 1) - 8 * k)) / 2);
     size_t j = k - (2 * p - 1 - i) * i / 2;
-    return (std::make_pair(list_a[i], list_a[j]));
+    return (std::array<T, 2>{list_a[i], list_a[j]});
   }
   size_t size()const{
     return(loop_size);

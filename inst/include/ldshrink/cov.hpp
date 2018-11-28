@@ -14,7 +14,7 @@ class LDshrinkCor{
   const double GenoMult;
   const double theta;
   const double pre_mult;
-  using	datapair=std::shared_ptr<std::pair<const Eigen::VectorXd,double> >;
+  using	datapair=const std::pair<const Eigen::VectorXd,double >;
 public:
   LDshrinkCor(const double m_, const double ne_,const double cutoff_,const bool isGenotype=true):
     m(m_),
@@ -22,23 +22,23 @@ public:
     cutoff(cutoff_),
     GenoMult(isGenotype ?	0.5 : 1),
     theta(LDshrinkCor::calc_theta(m))
-    ,pre_mult(        GenoMult * (1 - theta) * (1 - theta) + 0.5 * theta * (1 - 0.5 * theta))
+    ,pre_mult(         0.5 * theta * (1 - 0.5 * theta))
   {
   }
-  double check(double map_dist)const{
+  double check(double map_dist) const {
     double rho = 4 * ne * (map_dist) / 100;
     rho = -rho / (2 * m);
     rho = std::exp(rho);
-    return( rho >= cutoff ? rho : 0);
+    return (rho >= cutoff ? rho : 0);
   }
-  double cor(const double rho,std::pair<datapair,datapair> inputs)const{
+  double cor(const double rho,std::pair<const datapair*,const datapair*> inputs)const{
     const auto& x_1 =inputs.first->first;
     const double Nm1 = x_1.size()-1;
     const double& var_1 =inputs.first->second;
     const auto& x_2 =inputs.second->first;
     const double& var_2 =inputs.second->second;
     double r= ((x_1.dot(x_2)/Nm1)*rho*GenoMult*(1-theta)*(1-theta));
-    r=r/(pre_mult*std::sqrt(var_1*var_2));
+    r=r/(std::sqrt((var_1*((1-theta)*(1-theta)*GenoMult)+pre_mult)*(var_2*((1-theta)*(1-theta)*GenoMult)+pre_mult)));
     return(r);
   };
 private:
@@ -61,13 +61,13 @@ private:
 class SampleCor{
   const double anno_cutoff;
   const double cor_cutoff;
-  using	datapair=std::shared_ptr<std::pair<const Eigen::VectorXd,double> >;
+  using	datapair=std::pair<const Eigen::VectorXd,double> ;
 
 
 public:
   SampleCor(const double anno_cutoff_ = std::numeric_limits<double>::max(),
             const double cor_cutoff_ = 0)
-    : anno_cutoff(anno_cutoff_), cor_cutoff(cor_cutoff_*cor_cutoff) //,
+    : anno_cutoff(anno_cutoff_), cor_cutoff(cor_cutoff_*cor_cutoff_) //,
                                                            // m()
   {
     // Rcpp::Rcerr < "will kill all distances that are less than : " << anno_cutoff
@@ -78,7 +78,7 @@ public:
   //  Rcpp::Rcerr<<anno_dist<<std::endl;
     return(anno_dist<=anno_cutoff ? anno_dist : 0);
   }
-  double cor(const double rho,std::pair<datapair,datapair> inputs)const{
+  double cor(const double rho,std::pair<const datapair*,const datapair*> inputs)const{
     const auto& x_1 =inputs.first->first;
     const double Nm1 = x_1.size()-1;
     const double& var_1 =inputs.first->second;

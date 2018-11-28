@@ -25,38 +25,6 @@ test_that("linear indexing of symmetric matrices",{
 })
 
 
-test_that("don't flip alleles for the same dataframe",{
-  p <- 100
-  sample_df <- tibble::data_frame(ref=sample(c("A","C","G","T"),100,replace=T),alt=sample(c("A","C","G","T"),100,replace=T)) %>% 
-    dplyr::filter(ref!=alt) %>% dplyr::sample_n(p,replace=T) %>% tidyr::unite(allele,sep=",")
-  
-  expect_true(all(!flip_allele_exp(sample_df$allele,sample_df$allele)))
-})
-test_that("flip all alleles for the same dataframe (but flipped)",{
-  p <- 100
-  sample_df <- tibble::data_frame(ref=sample(c("A","C","G","T"),100,replace=T),alt=sample(c("A","C","G","T"),100,replace=T)) %>% 
-    dplyr::filter(ref!=alt) %>% dplyr::sample_n(p,replace=T) 
-  snp_df <- sample_df %>%tidyr::unite(allele,sep=",")
-  ld_df <- dplyr::select(sample_df,alt,ref) %>%tidyr::unite(allele,sep=",")
-  expect_true(all(flip_allele_exp(snp_df$allele,ld_df$allele)))
-})
-
-test_that("report NA when alleles don't match", {
-  p <- 100
-  sample_df <- tibble::data_frame(ref=sample(c("A", "C", "G", "T"), 100, replace=T),
-                                  alt=sample(c("A", "C", "G", "T"), 100, replace=T)) %>%
-      dplyr::filter(ref!=alt) %>%
-      dplyr::sample_n(p, replace=T)
-  snp_df <- sample_df %>%
-      tidyr::unite(allele, sep=",")
-  sample_df$ref[4] <- "F"
-  sample_df$alt[6] <- "I"
-  ld_df <- dplyr::select(sample_df, alt, ref) %>%
-      tidyr::unite(allele, sep=",")
-  ret <- flip_allele_exp(snp_df$allele, ld_df$allele)
-  expect_true(all(ret[-c(4, 6)]))
-  expect_true(all(is.na(ret[c(4, 6)])))
-})
 
 
 # 
@@ -74,12 +42,12 @@ test_that("report NA when alleles don't match", {
 #   bad_snps <- purrr::pmap_dfr(bad_reg,make_snps) %>% dplyr::mutate(isbad=T)
 #   good_snps <- purrr::pmap_dfr(break_df,make_snps) %>% dplyr::mutate(isbad=F)
 #   all_snps <- dplyr::bind_rows(good_snps,bad_snps) %>% dplyr::arrange(chr,pos) %>% dplyr::distinct(chr,pos,.keep_all = T)
-#   
-#   
+# 
+# 
 #   all_snps <- assign_snp_block(snp_df = all_snps,break_df = break_df,assign_all=F)
 #   # all_snps <- dplyr::mutate(all_snps,region_id=reg_id)
 # 
-#   
+# 
 #   check_reg <- dplyr::inner_join(all_snps,break_df)
 #   # dplyr::filter(check_reg,!dplyr::between(pos,start,stop))
 #   good_res <- purrr::pmap_lgl(check_reg,function(pos,start,stop,...){
@@ -87,7 +55,7 @@ test_that("report NA when alleles don't match", {
 #   })
 #   expect_equal(all(good_res),T)
 # })
-
+# 
 
 
 test_that("can chunk snp_df by number of chunks or chunksize", {
@@ -111,11 +79,16 @@ test_that("can chunk snp_df by number of chunks or chunksize", {
 
 
 test_that("genetic map interpolation works",{
+  p <- 10000
   
-  
-  
-  
-  
+  b <- runif(1)
+  full_p <- 1:(100*p)
+  pos <- sort(sample(full_p,p,replace=F))
+  not_p <- full_p[!full_p %in% pos]
+  mymap <- pos*b
+  not_data <- not_p*b
+  testmap <- interpolate_genetic_map(mymap,pos,not_p)
+  expect_equal(not_data,testmap)
 })
 
 

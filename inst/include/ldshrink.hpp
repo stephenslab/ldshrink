@@ -17,10 +17,8 @@ namespace Rcpp{
 
 
 
-
+#include <RcppParallel.h>
 #include <RcppEigen.h>
-
-
 #include "ldshrink/LD.hpp"
 #include "ldshrink/misc.hpp"
 #include "ldshrink/ld_writer.hpp"

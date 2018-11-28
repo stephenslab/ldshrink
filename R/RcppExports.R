@@ -4,20 +4,15 @@
 #' Internal implementation of ldshrink
 #'
 #'
-#' @param m a number indicating the size of the panel used to create the
-NULL
-
-#' Internal implementation of sample correlation
 #'
-#'
-#' @param m a number indicating the size of the panel used to create the
-NULL
-
 #' @export
 ldshrink_cor <- function(genotype_data, anno, options) {
     .Call(`_ldshrink_ldshrink_cor`, genotype_data, anno, options)
 }
 
+#' Internal implementation of sample correlation
+#'
+#'
 #' @export
 sample_cor <- function(genotype_data, anno, options) {
     .Call(`_ldshrink_sample_cor`, genotype_data, anno, options)
@@ -40,5 +35,9 @@ set_ld_region <- function(ld_regions, snp_info, assign_all = TRUE) {
 #' @export
 interpolate_genetic_map <- function(map, map_pos, target_pos, strict = TRUE, progress = FALSE) {
     .Call(`_ldshrink_interpolate_genetic_map`, map, map_pos, target_pos, strict, progress)
+}
+
+round_trip_skyline_t <- function(r_mat, to_t) {
+    .Call(`_ldshrink_round_trip_skyline_t`, r_mat, to_t)
 }
 

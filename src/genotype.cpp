@@ -68,14 +68,21 @@ size_t Genotype::validate(const Eigen::Map<Eigen::MatrixXd>  ref_data,const Eige
     tempd = tempd.array() - tempd.mean();
     data_buffer.emplace(std::make_pair(
         i + t_offset,
-        std::make_shared<data_v>(tempd, tempd.array().square().sum() /
-                                            static_cast<double>(N - 1))));
+        std::make_pair(tempd, tempd.array().square().sum() /
+		       static_cast<double>(N - 1))));
     offset++;
   }
   return (offset);
 }
 
-typename Genotype::datapair Genotype::get(std::pair<T,T> index) const {
+
+typename Genotype::datapair Genotype::get(std::array<T,2> index) const {
   using ret_datapair = typename Genotype::datapair;
-  return(std::make_pair(data_buffer.find(index.first)->second,data_buffer.find(index.second)->second));
+  auto faa = data_buffer.find(index[0]);
+  // const auto &tav=
+  // const auto &tbv=
+  const data_v *av=&data_buffer.at(index[0]);
+  const data_v *bv=&data_buffer.at(index[1]);
+
+  return(std::make_pair(av,bv));
 }

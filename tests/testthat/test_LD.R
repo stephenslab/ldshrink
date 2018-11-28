@@ -1,40 +1,86 @@
 context("Test LD calculations")
-test_that("theta is computed correctly", {
-  m <- 100
-  nmsum <- sum(1 / (1:(2*m-1)))
-  theta <- (1/nmsum) / (2*m + 1/nmsum)
-  expect_equal(calc_theta(m), theta)
+# test_that("theta is computed correctly", {
+# 
+#   expect_equal(calc_theta(m), theta)
+# })
+
+
+
+test_that("new templated ldshrink works like the old ldshrink (for sample correlation)",{
+  # n <- 500
+                                        # p <- 1100
+    library(ldshrink)
+  data("reference_genotype")
+  data("reference_map")
+  
+  rResult <- estimate_LD(reference_panel = reference_genotype[,1:5],method="sample",map = reference_map[1:5],output = "matrix")
+  
+  R <- cor(reference_genotype[,1:5])
+  expect_equal(R,rResult,check.attrubites=F)
+  # evdR <- eigen(result,symmetric = T)
+  # resmat <- as.matrix(Matrix::sparseMatrix(i=result$rowsnp,j = result$colsnp,x = result$r,symmetric = T))
+  # oresmat <- ldshrink(genotype_panel = haplomat,map_data = mapdat)
+  # all.equal(oresmat,resmat)
+})
+
+
+test_that("new templated ldshrink works like the old ldshrink",{
+  n <- 500
+  p <- 1100
+  haplomat <- matrix(sample(0:1, n*p, replace = T), n, p)
+  attr(haplomat,"index") <- 1L:p
+  mapdat <- cumsum(runif(p))
+  attr(mapdat,"index") <- 1L:p  
+  index <- 1L:p
+  result <- ldshrink::testldshrink(genotype_data = haplomat,mapd = mapdat,index = index, m=85, Ne=11490.672741, cutoff = 0.001)
+  resmat <- as.matrix(Matrix::sparseMatrix(i=result$rowsnp,j = result$colsnp,x = result$r,symmetric = T))
+  oresmat <- ldshrink(genotype_panel = haplomat,map_data = mapdat)
+  all.equal(oresmat,resmat)
 })
 
 test_that("Dense ldshrink is equal to a toy R implementation", {
   n <- 500
   p <- 1100
   
+  data("reference_genotype")
+  data("reference_map")
+  haplomat <- reference_genotype
+  mapdat <- reference_map
+  
+  n <- 500
+  p <- 1100
   haplomat <- matrix(sample(0:1, n*p, replace = T), n, p)
   mapdat <- cumsum(runif(p))
-
-  tLD <- ldshrink(haplomat, mapdat, na.rm = F)
-  calcLDR <- function(hmata, mapa, m=85, Ne=11490.672741, cutoff = 0.001){
+  
+  # haplomat <- matrix(sample(as.numeric(0:1), n*p, replace = T), n, p)
+  # mapdat <- cumsum(runif(p))
+  haplomat[,1:2] <- 1
+  calcLDR <- function(hmata, mapa, m=85, Ne=11490.672741, cutoff = 0.001,isgeno=FALSE){
     S <- stats::cov(hmata)
     p <- length(mapa)
     td <- abs(outer(mapa, mapa, `-`))
+    if(isgeno){
+      SigHat <- 0.5*SigHat
+    }
     # td[lower.tri(td)] <- 0
     # td <- td+t(td)
     rho  <-  4*Ne*(td)/100;
     rho <- -rho/(2*m);
     tshrinkage <- exp(rho);
     tshrinkage[tshrinkage<cutoff] <- 0
-    diag(tshrinkage) <- 1
+    #diag(tshrinkage) <- 1
     S <- S*tshrinkage
-    theta <- calc_theta(m)
+    theta <- ldshrink:::calc_theta(m)
     
     eye <- diag(p)*(0.5*theta * (1-0.5*theta))
     SigHat <-  ((1-theta)*(1-theta))*S+eye
+   
     return(stats::cov2cor(SigHat))
   }
-  
   RLD <- calcLDR(haplomat, mapdat)
-  expect_equal(RLD, tLD)
+  tLD <- estimate_LD(reference_panel = haplomat,map =  mapdat,output="matrix",isGenotype = F)
+
+  expect_equal(RLD, tLD,check.attributes = F)
 })
 
 
