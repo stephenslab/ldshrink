@@ -1,7 +1,7 @@
 #' Assign SNPs to LD blocks
 #'
-#' @param snp_df dataframe of snp coordinates, must contain columns named `chr` and `pos`.
-#' @param break_df dataframe of LD blocks, if `NULL`, use precomputed (EUR) ldshrink LD blocks, must contain columns named `chr` `start`, `stop`, and `region_id`
+#' @param snp_df dataframe of snp coordinates, must contain (integer-valued) columns named `chr` and `pos`.
+#' @param break_df dataframe of LD blocks, must contain (integer-valued) columns named `chr`, `start`, and `stop`
 #' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
 #'
 #' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
@@ -12,12 +12,7 @@ assign_snp_block <- function(snp_df, break_df=NULL, assign_all=T){
   return(dplyr::mutate(snp_df, region_id=assign_region(break_df, snp_df, assign_all = assign_all)))
 }
 
-
 assign_region <- function(break_coord, snp_coord, assign_all){
-  UseMethod("assign_region")
-}
-
-assign_region.data.frame <- function(break_coord, snp_coord, assign_all){
   stopifnot(!is.null(break_df$chr), 
             !is.null(break_df$start), 
             !is.null(break_df$stop),
@@ -34,57 +29,15 @@ assign_region.data.frame <- function(break_coord, snp_coord, assign_all){
 }
 
 
-
-assign_region.function <- function(break_coord, snp_coord, assign_all){
-  break_df <- break_coord()
-  stopifnot(!is.null(break_df$chr),
-            !is.null(break_df$start),
-            !is.null(break_df$stop),
-            !is.null(break_df$region_id),
-            is.integer(break_df$chr),
-            is.integer(break_df$start),
-            is.integer(break_df$stop),
-            dplyr::group_by(break_df, chr) %>% 
-              dplyr::summarise(all_sort=all((!is.unsorted(start, strictly = T)) & (!is.unsorted(stop, strictly = T)))) %>%
-              dplyr::summarise(as=all(all_sort)) %>%
-              dplyr::pull(as),
-            all(break_df$start<break_df$stop)
-  )
-  return(dplyr::mutate(snp_df, region_id=set_ld_region(break_df, snp_df, assign_all = assign_all)))
-}
-
-assign_region.NULL <- function(break_coord, snp_coord, assign_all){
-  liftover_allf <- system.file("fourier_ls-all.bed.gz", package="ldshrink")
-  break_df <- readr::read_delim(liftover_allf, delim="\t", trim_ws = T, skip=1, col_names=c("chr", "start", "stop"))
-  break_df <- dplyr::mutate(break_df, chr=as.integer(gsub("chr", "", chr))) %>% dplyr::mutate(region_id=1:n())
-  stopifnot(!is.null(break_df$chr),
-            !is.null(break_df$start),
-            !is.null(break_df$stop),
-            !is.null(break_df$region_id),
-            is.integer(break_df$chr),
-            is.integer(break_df$start),
-            is.integer(break_df$stop),
-            dplyr::group_by(break_df, chr) %>% dplyr::summarise(all_sort=all((!is.unsorted(start, strictly = T)) & (!is.unsorted(stop, strictly = T)))) %>% dplyr::summarise(as=all(all_sort)) %>% dplyr::pull(as), 
-            all(break_df$start<break_df$stop)
-  )
-  return(dplyr::mutate(snp_df, region_id = set_ld_region(break_df, snp_df, assign_all = assign_all)))
-}
-
-assign_region.default <- function(break_coord, snp_coord, assign_all){
-  stop("Don't know how to assign region for break_df of type", class(break_coord)[[1]], call. = FALSE)
-}
-
-
-
 #' Assign SNPs to LD blocks
 #'
-#' @param snp_df dataframe of snp coordinates, must contain columns named `chr` and `pos`.
-#' @param break_df dataframe of LD blocks, if `NULL`, use precomputed (EUR) ldshrink LD blocks, must contain columns named `chr` `start`, `stop`, and `region_id`
-#' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
-#'
+#' @param snp_df dataframe of snp coordinates, must contain (integer-valued) columns named `chr` and `pos`.
+#' @param n_chunks number of (approximately) equally sized chunks to be returned. (cannot be combined with `chunk_size`)
+#' @param chunk_size maximum size of each chunk (cannot be combined with `n_chunks`)
 #' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
 #' @export
-chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
+chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA,min_size=1){
+  
     stopifnot(!all(is.na(c(n_chunks, chunk_size))), !all(!is.na(c(n_chunks, chunk_size))))
 
     if(!is.na(n_chunks)){
@@ -92,10 +45,20 @@ chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
             dplyr::mutate(t_region_id=as.integer(gl(n = n_chunks, k = ceiling(n()/n_chunks), length=n()))) %>% dplyr::ungroup()
     }else{
         snp_df <- dplyr::group_by(snp_df, chr) %>%
-            dplyr::mutate(t_region_id=as.integer(gl(n = ceiling(n()/chunk_size) , k = chunk_size, length=n()))) %>% dplyr::ungroup()
-        snp_df <- dplyr::group_by(snp_df, chr, t_region_id) %>% dplyr::summarise(ct=n()) %>% dplyr::ungroup() %>% dplyr::inner_join(snp_df) %>% dplyr::mutate(t_region_id=ifelse(ct<min_size, t_region_id-1, t_region_id)) %>% dplyr::select(-ct) %>% dplyr::ungroup()
+            dplyr::mutate(t_region_id=as.integer(gl(n = ceiling(n()/chunk_size) ,
+                                                    k = chunk_size, length=n()))) %>%
+          dplyr::ungroup()
+        snp_df <- dplyr::group_by(snp_df, chr, t_region_id) %>%
+          dplyr::summarise(ct=n()) %>%
+          dplyr::ungroup() %>%
+          dplyr::inner_join(snp_df) %>%
+          dplyr::mutate(t_region_id=ifelse(ct<min_size, t_region_id-1, t_region_id)) %>%
+          dplyr::select(-ct) %>% dplyr::ungroup()
     }
-    snp_df <- dplyr::distinct(snp_df, chr, t_region_id) %>% dplyr::mutate(region_id=1:n()) %>% dplyr::inner_join(snp_df) %>% dplyr::select(-t_region_id)
+    snp_df <- dplyr::distinct(snp_df, chr, t_region_id) %>%
+      dplyr::mutate(region_id=1:n()) %>%
+      dplyr::inner_join(snp_df) %>% 
+      dplyr::select(-t_region_id)
     return(snp_df)
 }
 
@@ -103,9 +66,10 @@ chunk_genome <- function(snp_df, n_chunks=NA, chunk_size=NA, min_size=10){
 
 #' Assign or Interpolate Genetic Map Values
 #'
-#' @param snp_df 
-#' @param map_df dataframe of reference genetic map values
-#' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
+#' @param snp_df dataframe of snp coordinates. `snp_df` must contain (integer-valued) columns named `chr` and `pos`.
+#' @param map_df dataframe of reference genetic map values. `map_df` must contain integer-valued columns named `chr` and `pos`,
+#' as well as a numeric-valued column called `map`, which must be a _strictly_ sorted vector of cumulative genetic map values.
+#' @param strict boolean indicating whether
 #' @return a modified `snp_df` with an additional column giving the interpolated genetic map values at each locus
 #' @export
 assign_genetic_map <- function(snp_df, map_df, strict=FALSE){

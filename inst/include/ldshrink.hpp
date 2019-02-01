@@ -6,15 +6,21 @@
 //[[Rcpp]]
 #include<RcppCommon.h>
 
+#if __cplusplus > 201402L
 namespace Rcpp{
   namespace traits{
     //template<> std::vector<std::string_view> as(SEXP);
+
     SEXP wrap(const std::vector<std::string_view> & obj);
-    template <> class Exporter< std::vector<std::string_view> >;
-    template <> class Exporter<std::string_view>;
+    template <> class Exporter< std::vector<std::string> >;
+    template <> class Exporter<std::string>;
+
+
+
+
   }
 }
-
+#endif
 
 
 #include <RcppParallel.h>

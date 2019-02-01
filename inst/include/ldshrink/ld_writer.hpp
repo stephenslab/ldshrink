@@ -3,22 +3,6 @@
 #include <RcppEigen.h>
 
 #include <atomic>
-//enum { Anno, Cor };
-
-// template<int Def>
-// struct c2n{
-//   static constexpr auto colname = "unknown";
-// };
-
-// template<>
-// struct c2n<2>{
-//   static constexpr auto colname = "anno";
-// };
-
-// template<>
-// struct c2n<1>{
-//   static constexpr auto colname = "r";
-// };
 
 
 template<typename F,int Def>
@@ -68,22 +52,29 @@ public:
   T col() const { return m_idx[1]; }
   F value() const { return m_value[0] ;}
   template <int I> T rc() const { return m_idx[I] ;}
-  template <int I> F val() const { return m_value[I];}
-  //  const std::pair<T,T> idx() const {return std::make_pair(m_row, m_col);}
+  template <int I> F val() const { return m_value[I]; }
 };
-
 
 template<int AN>
 class Skyline_data_store{
   using T=int;
   using F=double;
+  using colvec_t=tbb::concurrent_vector<MatTup<T,F,1,AN>>;
+  using	rowvec_t=typename std::vector<colvec_t >;
 protected:
-  std::vector<tbb::concurrent_vector<MatTup<T,F,1,AN>> > data_store;
+  rowvec_t data_store;
   const size_t p_a;
   const size_t p_b;
   std::atomic<int> tot_elem;
   const bool isSymmetric;
 public:
+  using S=Rcpp::internal::string_proxy<STRSXP>;
+
+  using	DataRL=std::vector<std::vector<double>>;
+  using	DataIL=std::vector<std::vector<int>>;
+  using	DataSL=std::vector<std::vector<S>>;
+
+
   Skyline_data_store(const size_t p_);
   Skyline_data_store(const size_t p_a, const size_t p_b);
   Skyline_data_store(const std::array<Rcpp::NumericMatrix,AN> mat_dat,const bool isSymmetric = true);
@@ -93,30 +84,20 @@ public:
   Rcpp::StringVector fetch_colnames(const Rcpp::StringVector rownames) const;
   void finalize();
   void finalize_sort();
-  SEXP toType(const std::string output_type,Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-	      Rcpp::StringVector colnames = Rcpp::StringVector::create())const;
+  SEXP toType(const std::string output_type,Rcpp::StringVector rownames,
+	      Rcpp::StringVector colnames) const;
+  SEXP toType(const std::string output_type) const;
   Rcpp::S4 todsCMatrix(Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-		   Rcpp::StringVector colnames = Rcpp::StringVector::create()) const;
-
-  Rcpp::List toDataFrame(
-				    Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-				    Rcpp::StringVector colnames = Rcpp::StringVector::create()) const ;
-  Rcpp::NumericMatrix toMatrix(
-				    Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-				    Rcpp::StringVector colnames = Rcpp::StringVector::create()) const ;
-
-
-  Rcpp::List subDataFrame(const int i,const Rcpp::StringVector colnames)const ;
+		       Rcpp::StringVector colnames = Rcpp::StringVector::create()) const;
+  Rcpp::NumericMatrix toMatrix(Rcpp::StringVector rownames = Rcpp::StringVector::create(),
+			       Rcpp::StringVector colnames = Rcpp::StringVector::create()) const ;
 
   template<int IN>
   class const_iterator{
     using data_t=typename std::vector<tbb::concurrent_vector<MatTup<T,F,1,AN>> >;
-
     using	row_it_t = typename data_t::const_iterator;
     const data_t &tdata;
     using	col_it_t=typename tbb::concurrent_vector<MatTup<int,double,1,AN>>::const_iterator;
-    // using T=int;
-    // using F=double;
   protected:
     const size_t tot_num;
     row_it_t row_it;
@@ -127,15 +108,9 @@ public:
     Eigen::Triplet<F> cur_el;
   public:
     const_iterator(const const_iterator &other)
-      : tdata(other.tdata),tot_num(other.tot_num),row_it(other.row_it),col_it(other.col_it),cur_row(other.cur_row),cur_col(other.cur_col),cur_value(other.cur_value),cur_el(other.cur_el){
-      // if (other.col_it != row_it->end()) {
-      // 	cur_col = other.cur_col;
-      // 	cur_value = other.cur_value;
-      // 	cur_el = other.cur_el;
-      // }else{
-      // 	cur_col=-1;
-      // }
-    }
+        : tdata(other.tdata), tot_num(other.tot_num), row_it(other.row_it),
+          col_it(other.col_it), cur_row(other.cur_row), cur_col(other.cur_col),
+          cur_value(other.cur_value), cur_el(other.cur_el) {}
     const_iterator(const data_t &data_,const size_t tot_num_)
       : tdata(data_),
 	tot_num(tot_num_),
@@ -169,18 +144,8 @@ public:
       cur_el = Eigen::Triplet<F>(cur_row, cur_col, cur_value);
       return *this;
     }
-    const Eigen::Triplet<F>& operator *(){
-      // if (cur_num>=tot_num) {
-      //   Rcpp::Rcerr << "In element " << cur_num << std::endl;
-      //   Rcpp::stop("can't derefernce");
-      // }
-      return (cur_el);
-    }
+    const Eigen::Triplet<F> &operator*() { return (cur_el); }
     const Eigen::Triplet<F>* operator ->(){
-      // if (cur_num >= tot_num) {
-      //   Rcpp::Rcerr << "In element " << cur_num << std::endl;
-      //   Rcpp::stop("can't derefernce");
-      // }
       return(&cur_el);
     }
     bool operator==(const const_iterator &rhs)const {
@@ -207,107 +172,6 @@ public:
 };
 
 
-
-  template <typename T, typename F, int AN> class Pvec_data_store {
-    tbb::concurrent_vector<MatTup<T, F, 2, AN>> data_store;
-    const size_t p_a;
-    const size_t p_b;
-
-  public:
-    Pvec_data_store(const size_t p) : p_a(p), p_b(p) {
-      data_store.reserve(((p * p - p) / 2 + p) / 5);
-    }
-    Pvec_data_store(const size_t p_aa, const size_t p_bb)
-        : p_a(p_aa), p_b(p_bb) {
-      const size_t tot_p = p_a * p_b;
-      data_store.reserve(tot_p / 10);
-    }
-    void write_symm(const std::array<T, 2> idx) {
-      data_store.push_back(MatTup<T, F, 2, AN>(idx));
-    }
-    void write_nsymm(const std::array<T, 2> idx, const std::array<F, 2> res) {
-      std::array<F, AN> tres;
-      std::copy_n(res.begin(), AN, tres.begin());
-      data_store.push_back(MatTup<T, F, 2, AN>(idx, tres));
-    }
-    void finalize() {}
-
-    Eigen::SparseMatrix<double> toSparseMatrix() const {
-      const size_t num_elem = data_store.size();
-      Eigen::SparseMatrix<double> object(p_a, p_b);
-      // Rcpp::Rcerr << "About to create sparse matrix of size: ";
-      // Rcpp::Rcerr << num_elem << std::endl;
-      object.setFromTriplets(data_store.begin(), data_store.end());
-      //    Rcpp::Rcerr << "Sparse Matrix created" << std::endl;
-      return (object);
-    }
-
-    Rcpp::NumericMatrix
-    toMatrix(Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-             Rcpp::StringVector colnames = Rcpp::StringVector::create()) const {
-      const size_t num_elem = data_store.size();
-      Rcpp::NumericMatrix retmat(p_a, p_b);
-      for (auto &tr : data_store) {
-        retmat(tr.row(), tr.col()) = tr.value();
-      }
-      retmat.attr("dimnames") = Rcpp::List::create(rownames, colnames);
-      return (retmat);
-    }
-
-    SEXP toDataFrame(
-        Rcpp::StringVector rownames = Rcpp::StringVector::create(),
-        Rcpp::StringVector colnames = Rcpp::StringVector::create()) const {
-      const size_t num_elem = data_store.size();
-      using namespace Rcpp;
-      const bool use_rownames = colnames.size() == 0;
-      if (use_rownames) {
-        Rcpp::StringVector colname(num_elem);
-        Rcpp::StringVector rowname(num_elem);
-        std::array<Rcpp::NumericVector, AN> value_vec{};
-        for (int k = 0; k < AN; k++) {
-          value_vec[k] = Rcpp::NumericVector(num_elem);
-        }
-        for (int j = 0; j < num_elem; j++) {
-          const auto &tref = data_store[j];
-          const auto &trv = tref.m_value;
-          for (int k = 0; k < AN; k++) {
-            value_vec[k][j] = trv[k];
-          }
-          colname[j] = colnames[tref.template rc<1>()];
-          rowname[j] = colnames[tref.template rc<0>()];
-        }
-
-        if (AN == 2) {
-          return (List::create(_["rowsnp"] = rowname, _["colsnp "] = colname,
-                               _["anno"] = value_vec[1],
-                               _["r"] = value_vec[0]));
-        } else {
-          return (List::create(_["rowsnp"] = rowname, _["colsnp"] = colname,
-                               _["r"] = value_vec[0]));
-        }
-      }
-      Rcpp::IntegerVector colname(num_elem);
-      Rcpp::IntegerVector rowname(num_elem);
-      std::array<Rcpp::NumericVector, AN> value_vec{};
-	for(int k=0; k<AN; k++){
-	  value_vec[k]=Rcpp::NumericVector(num_elem);
-	}
-	for  ( int  j  = 0; j  < num_elem; j++) {
-	  const auto &tref = data_store[j];
-	  const auto &trv=tref.m_value;
-	  for (int k = 0; k < AN; k++) {
-	    value_vec[k][j] = trv[k];
-	  }
-	  colname[j] = tref.template rc<1>();
-	  rowname[j] = tref.template rc<0>();
-	}
-    if(AN==2){
-      return(List::create(_["rowsnp"]=rowname,_["colsnp"]=colname,_["anno"]=value_vec[1],_["r"]=value_vec[0]));
-    } else {
-      return (List::create(_["rowsnp"]=rowname,_["colsnp"] = colname, _["r"] = value_vec[0]));
-    }
-  }
-};
 
 
 
@@ -379,14 +243,15 @@ inline void Skyline_data_store<AN>::finalize_sort(){
   tbb::parallel_for(tbb::blocked_range<size_t>(0, p_a),
                     [&](const tbb::blocked_range<size_t> &r) {
                       for (size_t i = r.begin(); i != r.end(); i++) {
-			std::sort(
-                            data_store[i].begin(), data_store[i].end(),
-                            [](const elt &a, const elt &b) {
-                              return (a.m_idx < b.m_idx);
-                            });
-		      }
-		    });
+                        std::sort(data_store[i].begin(), data_store[i].end(),
+                                  [](const elt &a, const elt &b) {
+                                    return (a.m_idx < b.m_idx);
+                                  });
+                      }
+                    });
 }
+
+
 
 template <int AN>
 inline Rcpp::NumericMatrix
@@ -419,20 +284,6 @@ Skyline_data_store<AN>::toMatrix(Rcpp::StringVector rownames,
   return (ret);
 }
 
-template<int AN>
-inline SEXP Skyline_data_store<AN>::toType(const std::string output_type,Rcpp::StringVector rownames,Rcpp::StringVector colnames)const{
-  if (output_type == "dsCMatrix") {
-    return (this->todsCMatrix(rownames, colnames));
-  }
-  if (output_type == "matrix") {
-    return (this->toMatrix(rownames, colnames));
-  }
-  if (output_type == "data.frame" || output_type == "data_frame") {
-    return (this->toDataFrame(rownames, colnames));
-  }
-  Rcpp::Rcerr << "Unknown type " << output_type << std::endl;
-  Rcpp::stop("output type must be one of dsCMatrix,matrix,data.frame");
-}
 
 template<int AN>
 inline Rcpp::S4 Skyline_data_store<AN>::todsCMatrix(Rcpp::StringVector rownames,
@@ -472,115 +323,37 @@ Eigen::SparseMatrix<double> Skyline_data_store<AN>::toSparseMatrix() const{
   return(tr);
 }
 
-template<int AN>
-inline Rcpp::List Skyline_data_store<AN>::toDataFrame(Rcpp::StringVector rownames,
-							       Rcpp::StringVector colnames) const {
-  using namespace Rcpp;
-  CharacterVector classes = CharacterVector::create("tbl_df", "data.frame");
-  const bool use_rownames=rownames.size()>0;
-  List DataList = no_init(p_a);
-  for (int i = 0; i < p_a; i++) {
-    DataList[i] = subDataFrame(i, colnames);
-  }
-  Rcpp::IntegerVector row_id(p_a);
-  std::iota(row_id.begin(), row_id.end(), 1);
-  if (!use_rownames) {
-    List retl = List::create(_["rowsnp"] = row_id, _["data"] = DataList);
-    retl.attr("class") = classes;
-    retl.attr("row.names")=row_id;
-    return (retl);
-  }
-  List retl = List::create(_["rowsnp"] = rownames, _["data"] = DataList);
-  retl.attr("row.names")=row_id;
-  retl.attr("class") = classes;
-
-  return (retl);
-}
 
 template<int AN>
-inline Rcpp::List Skyline_data_store<AN>::subDataFrame(const int i,const Rcpp::StringVector colnames)const {
-  using namespace Rcpp;
-  const bool use_rownames=colnames.size()>0;
-  const size_t tp=data_store[i].size();
-  CharacterVector classes = CharacterVector::create("tbl_df", "data.frame");
-  Rcpp::IntegerVector row_id(tp);
-  std::iota(row_id.begin(), row_id.end(), 1);
-  if(use_rownames){
-    Rcpp::StringVector colname(tp);
-    std::array<Rcpp::NumericVector, AN> value_vec{};
-    for(int k=0; k<AN; k++){
-      value_vec[k]=Rcpp::NumericVector(tp);
-    }
-    for (int j = 0; j < tp; j++) {
-      const auto &tref = data_store[i][j];
-      const auto &trv=tref.m_value;
-      for (int k = 0; k < AN; k++) {
-        value_vec[k][j] = trv[k];
-      }
-      colname[j] = colnames[tref.template rc<0>()];
-    }
+inline SEXP Skyline_data_store<AN>::toType(const std::string output_type)const{
+  if (output_type == "dsCMatrix") {
 
-    if(AN==2){
-      List retl=List::create(_["colsnp"]=colname,_["anno"]=value_vec[1],_["r"]=value_vec[0]);
-      retl.attr("class")=classes;
-      retl.attr("row.names")=row_id;
-      return(retl);
-    } else {
-
-      List retl = List::create(_["colsnp"] = colname, _["r"] = value_vec[0]);
-      retl.attr("class") = classes;
-      retl.attr("row.names")=row_id;
-      return (retl);
-    }
+    return (this->todsCMatrix(Rcpp::StringVector::create(),
+			      Rcpp::StringVector::create()));
   }
-  Rcpp::IntegerVector colname(tp);
-  std::array<Rcpp::NumericVector, AN> value_vec{};
-  for(int k=0; k<AN; k++){
-    value_vec[k]=Rcpp::NumericVector(tp);
+  if (output_type == "matrix") {
+    return (this->toMatrix(Rcpp::StringVector::create(),
+			   Rcpp::StringVector::create()));
   }
-  for (int j = 0; j < tp; j++) {
-    const auto &tref = data_store[i][j];
-    const auto &trv=tref.m_value;
-    for (int k = 0; k < AN; k++) {
-      value_vec[k][j] = trv[k];
-    }
-    colname[j] = tref.template rc<0>()+1;
+  if (output_type == "data.frame" || output_type == "data_frame") {
+    Rcpp::stop("conversion to data.frame is currently unsupported");
   }
- if(AN==2){
-      List retl=List::create(_["colsnp"]=colname,_["anno"]=value_vec[1],_["r"]=value_vec[0]);
-      retl.attr("class")=classes;
-      retl.attr("row.names")=row_id;
-      return(retl);
-    } else {
-      List retl = List::create(_["colsnp"] = colname, _["r"] = value_vec[0] );
-      retl.attr("class") = classes;
-      retl.attr("row.names")=row_id;
-      return (retl);
-    }
+  Rcpp::Rcerr << "Unknown type " << output_type << std::endl;
+  Rcpp::stop("output type must be one of dsCMatrix,matrix");
 }
 
-// template<typename S>
 
-// class LDshrinkWr  i ter{
-// protected:
-//   using T=int;
-//   tbb::concurrent_vector<MatTup<T> > data_store;
-//   tbb::concurrent_vector<MatTup<T> > anno_data_store;
-//   using	name_vec=Rcpp::StringVector;
-//   const name_vec snpnames_row;
-//   const name_vec snpnames_col;
-//   const size_t p_row;
-//   const size_t p_col;
-//   const bool write_annotations;
-// public:
-//   LDshrinkWriter(const std::vector<T> &inp,const name_vec names,const bool write_annotations=false);
-//   LDshrinkWriter(const std::pair<std::vector<T>,std::vector<T>> &inpconst, const std::pair<name_vec,name_vec> names,const bool write_annotations=false);
-//   void write_symm(const std::pair<T,T> idx);
-//   void write_nsymm(const std::pair<T,T> idx,const double res,const double annom);
-//   Eigen::SparseMatrix<double> sparseMatrix() const;
-//   void finalize();
-//   SEXP dsCMatrix() const;
-//   Rcpp::DataFrame toDataFrame(const bool use_rownames=true)const;
-//   Rcpp::DataFrame toAnnotationDataFrame(const bool use_rownames)const;
-//   SEXP toType(const std::string	output_type)const;
-// };
+template<int AN>
+  inline SEXP Skyline_data_store<AN>::toType(const std::string output_type,Rcpp::StringVector rownames,Rcpp::StringVector colnames)const{
+  if (output_type == "dsCMatrix") {
+    return (this->todsCMatrix(rownames, colnames));
+  }
+  if (output_type == "matrix") {
+    return (this->toMatrix(rownames, colnames));
+  }
+  if (output_type == "data.frame" || output_type == "data_frame") {
+    Rcpp::stop("conversion to data.frame is currently unsupported");
+  }
+  Rcpp::Rcerr << "Unknown type " << output_type << std::endl;
+  Rcpp::stop("output type must be one of dsCMatrix,matrix");
+}

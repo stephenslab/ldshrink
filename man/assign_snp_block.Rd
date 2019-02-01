@@ -7,9 +7,9 @@
 assign_snp_block(snp_df, break_df = NULL, assign_all = T)
 }
 \arguments{
-\item{snp_df}{dataframe of snp coordinates, must contain columns named `chr` and `pos`.}
+\item{snp_df}{dataframe of snp coordinates, must contain (integer-valued) columns named `chr` and `pos`.}
 
-\item{break_df}{dataframe of LD blocks, if `NULL`, use precomputed (EUR) ldshrink LD blocks, must contain columns named `chr` `start`, `stop`, and `region_id`}
+\item{break_df}{dataframe of LD blocks, must contain (integer-valued) columns named `chr`, `start`, and `stop`}
 
 \item{assign_all}{whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`}
 }

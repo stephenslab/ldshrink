@@ -98,8 +98,6 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP run_testthat_tests();
-
 static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
     {"_ldshrink_sample_cor", (DL_FUNC) &_ldshrink_sample_cor, 3},
@@ -108,7 +106,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},
     {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {"_ldshrink_round_trip_skyline_t", (DL_FUNC) &_ldshrink_round_trip_skyline_t, 2},
-    {"run_testthat_tests",                (DL_FUNC) &run_testthat_tests,                0},
     {NULL, NULL, 0}
 };
 

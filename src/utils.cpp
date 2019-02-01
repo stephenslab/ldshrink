@@ -2,6 +2,7 @@
 #include <Rcpp.h>
 #include <Rinternals.h>
 
+#if __cplusplus > 201402L
 
 namespace Rcpp{
   namespace traits{
@@ -43,3 +44,4 @@ namespace Rcpp{
         };
     }
 }
+#endif

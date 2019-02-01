@@ -24,7 +24,7 @@ struct cpp2r<double>{
 };
 
 template<>
-struct cpp2r<std::string_view>{
+struct cpp2r<std::string>{
    static const SEXPTYPE data_t =STRSXP;
 };
 
@@ -44,11 +44,17 @@ template<> struct r2cpp_t<LGLSXP>{
   typedef bool type;
 };
 template<> struct r2cpp_t<CHARSXP>{
-  typedef std::string_view type;
+  typedef std::string type;
 };
+#if __cplusplus > 201402L
 template<> struct r2cpp_t<STRSXP>{
   typedef std::string_view type;
 };
+#else
+template<> struct r2cpp_t<STRSXP>{
+  typedef std::string type;
+};
+#endif
 
 template<typename T>
 inline T value_or(Rcpp::List dat,const std::string name,const T alt){

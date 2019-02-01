@@ -62,7 +62,7 @@ public:
                   << p << ", assuming data is stored SNPxSample!";
     }
     if (!std::is_sorted(map.begin(), map.end(), std::less<T>())) {
-      atol("Recombination map must be non-decreasing\n");
+      Rcpp::stop("Recombination map must be non-decreasing\n");
     }
   }
   bool is_scaled;

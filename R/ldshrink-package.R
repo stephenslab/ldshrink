@@ -1,4 +1,5 @@
 #' @keywords internal
+#' @import tibble
 #' @importFrom RcppParallel RcppParallelLibs
 #' @importFrom utils data installed.packages
 #' @importFrom magrittr "%>%"

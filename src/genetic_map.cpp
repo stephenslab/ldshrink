@@ -1,6 +1,8 @@
 #include <map>
-#include "ldshrink.hpp"
+#include <ldshrink.hpp>
 #include <Rcpp.h>
+#include <progress.hpp>
+#include <ldshrink/annotation.hpp>
 
 double ConstantGeneticMap::interpolate_post(const int pos)const {
   const std::string error_mess="position"+std::to_string(pos)+" is after final position";
@@ -110,12 +112,16 @@ ConstantGeneticMap::ConstantGeneticMap(const Rcpp::IntegerVector &pos_vec,
 
 
 //' Linear interpolation of genetic map values
-//'
+// '@param map  is a length `p` vector of cumulative genetic map values. `map` must be _strictly_ _sorted_
+// '@param map_pos  is a length `p` vector of genome coordinates corresponding to the reference genetic map. `map_pos` must be _strictly_ _sorted_
+// '@param target_pos is a vector of coordinates to interpolate
+// '@param strict a boolean indicating whether to strictly interpolate
+// '@param progress a boolean indicating whether to indicate progress with a progress bar
 //' @export
 //[[Rcpp::export]]
 Rcpp::NumericVector interpolate_genetic_map(const Rcpp::NumericVector &map,
-                                    const Rcpp::IntegerVector map_pos,
-                                    const Rcpp::IntegerVector target_pos,
+					    const Rcpp::IntegerVector map_pos,
+					    const Rcpp::IntegerVector target_pos,
 					    const bool strict = true,
 					    const bool progress = false) {
 

@@ -5,6 +5,10 @@
 ^inst/snakemake_files/$
 ^inst/snakemake_files/*$
 ^.projectile
+^.clang-tidy
+^.ccls
+^.ccls-root
+^.dir-locals.el
 compile_commands.json
 ^src/compile_commands.json^
 ^inst/ldetect_files/$

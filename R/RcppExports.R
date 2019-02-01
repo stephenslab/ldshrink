@@ -5,7 +5,6 @@
 #'
 #'
 #'
-#' @export
 ldshrink_cor <- function(genotype_data, anno, options) {
     .Call(`_ldshrink_ldshrink_cor`, genotype_data, anno, options)
 }
@@ -13,7 +12,6 @@ ldshrink_cor <- function(genotype_data, anno, options) {
 #' Internal implementation of sample correlation
 #'
 #'
-#' @export
 sample_cor <- function(genotype_data, anno, options) {
     .Call(`_ldshrink_sample_cor`, genotype_data, anno, options)
 }
@@ -31,7 +29,8 @@ set_ld_region <- function(ld_regions, snp_info, assign_all = TRUE) {
 }
 
 #' Linear interpolation of genetic map values
-#'
+NULL
+
 #' @export
 interpolate_genetic_map <- function(map, map_pos, target_pos, strict = TRUE, progress = FALSE) {
     .Call(`_ldshrink_interpolate_genetic_map`, map, map_pos, target_pos, strict, progress)

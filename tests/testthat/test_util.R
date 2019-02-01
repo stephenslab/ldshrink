@@ -25,44 +25,8 @@ test_that("linear indexing of symmetric matrices",{
 })
 
 
-
-
-# 
-# 
-# test_that("can map variants to LD regions",{
-# 
-#   data("break_df")
-#   bad_reg <- dplyr::group_by(break_df,chr) %>% dplyr::slice(c(1)) %>% dplyr::mutate(stop=start,start=0) %>% dplyr::ungroup()
-#   bad_reg2 <- dplyr::group_by(break_df,chr) %>% dplyr::slice(n()) %>% dplyr::mutate(start=stop,stop=stop+100) %>% dplyr::ungroup()
-#   bad_reg <- dplyr::bind_rows(bad_reg,bad_reg2)
-#   make_snps <- function(chr,start,stop,...){
-#     n_snps <- sample(0:min(c(10,stop-start)),1)
-#     return(tibble::data_frame(chr=rep(chr,n_snps),pos=sort(sample((start+1):(stop-1),n_snps,replace=F))))
-#   }
-#   bad_snps <- purrr::pmap_dfr(bad_reg,make_snps) %>% dplyr::mutate(isbad=T)
-#   good_snps <- purrr::pmap_dfr(break_df,make_snps) %>% dplyr::mutate(isbad=F)
-#   all_snps <- dplyr::bind_rows(good_snps,bad_snps) %>% dplyr::arrange(chr,pos) %>% dplyr::distinct(chr,pos,.keep_all = T)
-# 
-# 
-#   all_snps <- assign_snp_block(snp_df = all_snps,break_df = break_df,assign_all=F)
-#   # all_snps <- dplyr::mutate(all_snps,region_id=reg_id)
-# 
-# 
-#   check_reg <- dplyr::inner_join(all_snps,break_df)
-#   # dplyr::filter(check_reg,!dplyr::between(pos,start,stop))
-#   good_res <- purrr::pmap_lgl(check_reg,function(pos,start,stop,...){
-#     dplyr::between(pos,start,stop)
-#   })
-#   expect_equal(all(good_res),T)
-# })
-# 
-
-
 test_that("can chunk snp_df by number of chunks or chunksize", {
-  
-  # p <- 1000
     gen_chrom <- function(ch, p){
-
     tibble::data_frame(pos=sort(sample(1:(p*100), p, replace = F))) %>% dplyr::mutate(chr=ch)
   }
   mp <- sample(10^(seq(3, 5, length.out = 50)), 22, replace=F)
@@ -70,26 +34,58 @@ test_that("can chunk snp_df by number of chunks or chunksize", {
   chunk_df <- chunk_genome(snp_df, n_chunks = 10)
   all_chunk_df <- dplyr::group_by(chunk_df, chr) %>% dplyr::summarise(n_chunks=dplyr::n_distinct(region_id))
   expect_equal(unique(all_chunk_df$n_chunks), 10)
-  chunk_df <- chunk_genome(snp_df, chunk_size = 100, min_size = 10)
+  chunk_df <- chunk_genome(snp_df, chunk_size = 100,min_size = 10)
   all_chunk_df <- dplyr::group_by(chunk_df, region_id) %>% dplyr::summarise(region_size=n())
   expect_gt(min(all_chunk_df$region_size), 10)
   expect_lte(max(all_chunk_df$region_size), 110)
 })
 
-
-
 test_that("genetic map interpolation works",{
   p <- 10000
-  
   b <- runif(1)
   full_p <- 1:(100*p)
   pos <- sort(sample(full_p,p,replace=F))
   not_p <- full_p[!full_p %in% pos]
   mymap <- pos*b
   not_data <- not_p*b
-  testmap <- interpolate_genetic_map(mymap,pos,not_p)
+  testmap <- interpolate_genetic_map(mymap,pos,not_p,strict=F)
   expect_equal(not_data,testmap)
 })
 
 
+test_that("ldshrink can work like base R for sample correlation LD scores",{
+  # n <- 500
+  # p <- 1100
+  library(ldshrink)
+  data("reference_genotype")
+  data("reference_map")
+  ldscoref <- system.file("test_data/reference_genotype.l2.ldscore.gz",package = "ldshrink")
+  ld_df <- readr::read_tsv(ldscoref)
+  tR <- cor(reference_genotype)
+  rResult <- estimate_LD(reference_panel = reference_genotype,method="sample",map = reference_map,output = "matrix")
+  L2 <- estimate_LDscores(rResult,nrow(reference_genotype))
+  # R <- cor(reference_genotype[,1:5])
+  expect_equal(ld_df$L2,L2,check.attributes=F,tolerance=1e-3)
+
+})
+
+
+
+
+test_that("Eigenvalue decomposition results match singular value decomposition results",{
+  library(ldshrink)
+  data("reference_genotype")
+  data("reference_map")
+  scaled_genotype <- scale(reference_genotype)
+  Nm1 <- nrow(scaled_genotype) - 1
+  scaled_svd <- svd(scaled_genotype)  
+  Vt <- scaled_svd$v
+  svd_d <- scaled_svd$d^2/Nm1 
+  evdR <- ldshrink_evd(reference_panel = reference_genotype,map = reference_map,useldshrink = F)
+  expect_equal(evdR$D,svd_d)
+  sR <- Vt%*%diag(svd_d)%*%t(Vt)
+  eR <- evdR$Q%*%diag(evdR$D)%*%t(evdR$Q)
+  expect_equal(sR,evdR$R,check.attributes=F)
+  expect_equal(eR,evdR$R,check.attributes=F)
+})
 

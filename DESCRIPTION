@@ -13,8 +13,10 @@ Description: The R package 'ldshrink' implements TBA.
 	Note that 'ldshrink' is a companion package to 'rssr'.
 Imports:
     Rcpp,
-    RcppEigen (>= 0.3.2.9.1),
+    RcppEigen,
     dplyr,
+    purrr,
+    tibble,
     progress,
     BBmisc,
     BH,
