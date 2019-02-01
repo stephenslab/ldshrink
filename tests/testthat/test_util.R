@@ -59,33 +59,15 @@ test_that("ldshrink can work like base R for sample correlation LD scores",{
   library(ldshrink)
   data("reference_genotype")
   data("reference_map")
-  ldscoref <- system.file("test_data/reference_genotype.l2.ldscore.gz",package = "ldshrink")
+  ldscoref <- system.file("reference_genotype.l2.ldscore.gz",package = "ldshrink")
   ld_df <- readr::read_tsv(ldscoref)
   tR <- cor(reference_genotype)
   rResult <- estimate_LD(reference_panel = reference_genotype,method="sample",map = reference_map,output = "matrix")
   L2 <- estimate_LDscores(rResult,nrow(reference_genotype))
   # R <- cor(reference_genotype[,1:5])
   expect_equal(ld_df$L2,L2,check.attributes=F,tolerance=1e-3)
-
+  
 })
 
 
-
-
-test_that("Eigenvalue decomposition results match singular value decomposition results",{
-  library(ldshrink)
-  data("reference_genotype")
-  data("reference_map")
-  scaled_genotype <- scale(reference_genotype)
-  Nm1 <- nrow(scaled_genotype) - 1
-  scaled_svd <- svd(scaled_genotype)  
-  Vt <- scaled_svd$v
-  svd_d <- scaled_svd$d^2/Nm1 
-  evdR <- ldshrink_evd(reference_panel = reference_genotype,map = reference_map,useldshrink = F)
-  expect_equal(evdR$D,svd_d)
-  sR <- Vt%*%diag(svd_d)%*%t(Vt)
-  eR <- evdR$Q%*%diag(evdR$D)%*%t(evdR$Q)
-  expect_equal(sR,evdR$R,check.attributes=F)
-  expect_equal(eR,evdR$R,check.attributes=F)
-})
 

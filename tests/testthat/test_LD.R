@@ -58,7 +58,6 @@ test_that("Dense ldshrink is equal to a toy R implementation", {
 
 test_that("Dense ldshrink is equal to a toy R implementation for sample data", {
  
-  
   data("reference_genotype")
   data("reference_map")
   # haplomat <- matrix(sample(as.numeric(0:1), n*p, replace = T), n, p)

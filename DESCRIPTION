@@ -38,5 +38,7 @@ License: GPL (>=3)
 SystemRequirements: GNU make
 URL: https://github.com/stephenslab/ldshrink
 BugReports: https://github.com/stephenslab/ldshrink/issues
+Depends: 
+    R (>= 3.1.2)
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
