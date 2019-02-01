@@ -3,14 +3,13 @@ Encoding: UTF-8
 Type: Package
 Authors@R: c(person("Matthew","Stephens",role="aut",email="mstephens@uchicago.edu"),
              person("Xin","He",role="aut",email="xinhe@uchicago.edu"),
-             person("Nicholas","Knoblauch",role=c("aut"),email="nwknoblauch@uchicago.edu"),
+             person("Nicholas","Knoblauch",role="aut",email="nwknoblauch@uchicago.edu"),
              person("Xiang","Zhu",role=c("aut","cre"),email="xiangzhu@uchicago.edu")) 
-Title: A one-stop R package for shrinkage estimation of linkage disequilibrium
-Version: 1.0
-Date: 2017-05-31
-Description: The R package 'ldshrink' implements TBA.
-	These methods can be applied to TBA.
-	Note that 'ldshrink' is a companion package to 'rssr'.
+Title: A one-stop R package for shrinkage estimation of linkage disequilibrium.
+Version: 1.0-1
+Date: 2018-10-05
+Description: Implements TBA.  These methods can be applied to TBA.
+    Note that 'ldshrink' is a companion package to 'rssr'.
 Imports:
     Rcpp,
     RcppEigen (>= 0.3.2.9.1),
