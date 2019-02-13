@@ -32,20 +32,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// flip_allele
-Rcpp::LogicalVector flip_allele(const Rcpp::IntegerVector& gwas_ref, const Rcpp::IntegerVector& gwas_alt, const Rcpp::IntegerVector& ld_ref, const Rcpp::IntegerVector& ld_alt);
-RcppExport SEXP _ldshrink_flip_allele(SEXP gwas_refSEXP, SEXP gwas_altSEXP, SEXP ld_refSEXP, SEXP ld_altSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type gwas_ref(gwas_refSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type gwas_alt(gwas_altSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type ld_ref(ld_refSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type ld_alt(ld_altSEXP);
-    rcpp_result_gen = Rcpp::wrap(flip_allele(gwas_ref, gwas_alt, ld_ref, ld_alt));
-    return rcpp_result_gen;
-END_RCPP
-}
 // sorted_snp_df
 bool sorted_snp_df(const Rcpp::DataFrame& snp_info);
 RcppExport SEXP _ldshrink_sorted_snp_df(SEXP snp_infoSEXP) {
@@ -97,15 +83,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// strand_flip
+Rcpp::StringVector strand_flip(Rcpp::StringVector ref_alt, bool reverse);
+RcppExport SEXP _ldshrink_strand_flip(SEXP ref_altSEXP, SEXP reverseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type ref_alt(ref_altSEXP);
+    Rcpp::traits::input_parameter< bool >::type reverse(reverseSEXP);
+    rcpp_result_gen = Rcpp::wrap(strand_flip(ref_alt, reverse));
+    return rcpp_result_gen;
+END_RCPP
+}
+// flip_alleles
+Rcpp::IntegerVector flip_alleles(Rcpp::StringVector query_ref_alt, Rcpp::StringVector target_ref_alt);
+RcppExport SEXP _ldshrink_flip_alleles(SEXP query_ref_altSEXP, SEXP target_ref_altSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type query_ref_alt(query_ref_altSEXP);
+    Rcpp::traits::input_parameter< Rcpp::StringVector >::type target_ref_alt(target_ref_altSEXP);
+    rcpp_result_gen = Rcpp::wrap(flip_alleles(query_ref_alt, target_ref_alt));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
     {"_ldshrink_sample_cor", (DL_FUNC) &_ldshrink_sample_cor, 3},
-    {"_ldshrink_flip_allele", (DL_FUNC) &_ldshrink_flip_allele, 4},
     {"_ldshrink_sorted_snp_df", (DL_FUNC) &_ldshrink_sorted_snp_df, 1},
     {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},
     {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {"_ldshrink_round_trip_skyline_t", (DL_FUNC) &_ldshrink_round_trip_skyline_t, 2},
+    {"_ldshrink_strand_flip", (DL_FUNC) &_ldshrink_strand_flip, 2},
+    {"_ldshrink_flip_alleles", (DL_FUNC) &_ldshrink_flip_alleles, 2},
     {NULL, NULL, 0}
 };
 

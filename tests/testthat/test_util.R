@@ -70,4 +70,28 @@ test_that("ldshrink can work like base R for sample correlation LD scores",{
 })
 
 
+test_that("Check for allele flipping works",{
+  
+  nuc <- c("A","C","T","G")
+  ref_a <- outer(nuc,nuc,function(x,y){paste0(x,",",y)})
+  ref_a <- ref_a[ref_a!=diag(ref_a)]
+  
+  #don't flip yourself
+  expect_equal(flip_alleles(ref_a,ref_a),rep(1L,12))
+  rev_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(.x),collapse=",")) 
+  expect_equal(flip_alleles(ref_a,rev_ref),rep(-1L,12))
+  
+  flips <- c("A"="T",
+             "T"="A",
+             "G"="C",
+             "C"="G")
+  
+  flip_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(flips[.x],collapse=",")) 
+  expect_equal(flip_alleles(ref_a,flip_ref),rep(-1L,12))
+  flip_rev_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(flips[.x]),collapse=",")) 
+  expect_equal(flip_alleles(ref_a,flip_rev_ref),rep(1L,12))
+  
+})
+
+
 

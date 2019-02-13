@@ -36,45 +36,6 @@ bool operator==(const SNPpos p, const GRange g){
   return((p.c_p>=g.range.first.c_p) && (p.c_p<=g.range.second.c_p));
 }
 
-//[[Rcpp::export]]
-Rcpp::LogicalVector flip_allele(const Rcpp::IntegerVector &gwas_ref,
-				const Rcpp::IntegerVector &gwas_alt,
-				const Rcpp::IntegerVector &ld_ref,
-				const Rcpp::IntegerVector &ld_alt){
-  const size_t p=gwas_ref.size();
-  if(ld_ref.size()!=p){
-    Rcpp::stop("length(gwas_ref)!=length(ld_ref)");
-  }
-  if(ld_alt.size()!=p){
-    Rcpp::stop("length(gwas_ref)!=length(ld_alt)");
-  }
-  if(gwas_alt.size()!=p){
-    Rcpp::stop("length(gwas_ref)!=length(gwas_alt)");
-  }
-  Rcpp::LogicalVector retvec(p);
-  for(int i=0; i<p;i++){
-    auto gwas_r = gwas_ref(i);
-    auto gwas_a = gwas_alt(i);
-    auto ld_r = ld_ref(i);
-    auto ld_a = ld_alt(i);
-    if((gwas_r==gwas_a) || (ld_r==ld_a)){
-      Rcpp::Rcerr<<"In Position: "<<i<<std::endl;
-      Rcpp::stop("reference must be different than alternate for gwas and LD");
-    }
-    if((gwas_r==ld_r) && (gwas_a==ld_a)){
-      retvec(i)=false;
-    }else{
-      if((gwas_r==ld_a) && (gwas_a==ld_r)){
-	retvec(i)=true;
-      }else{
-	retvec(i)=NA_LOGICAL;
-      }
-    }
-  }
-
-  return(retvec);
-}
-
 
 
 

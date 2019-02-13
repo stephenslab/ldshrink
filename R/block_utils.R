@@ -87,21 +87,3 @@ calc_theta <- function(m){
   (1/nmsum) / (2*m + 1/nmsum)
 }
 
-flip_allele_exp <- function(allele_a, allele_b){
-  utf_i <- Vectorize(utf8ToInt)
-  data_df <- tibble::data_frame(allele_a = allele_a, allele_b=allele_b)
-  gwas_snp_df <- data_df %>%
-    tidyr::separate(allele_a, c("ref_a", "alt_a")) %>%
-    tidyr::separate(allele_b, c("ref_b", "alt_b")) %>%
-    dplyr::mutate(
-      ref_a=utf_i(tolower(ref_a)),
-      alt_a=utf_i(tolower(alt_a)),
-      ref_b=utf_i(tolower(ref_b)),
-      alt_b=utf_i(tolower(alt_b))
-    )
- 
-  return(flip_allele(gwas_snp_df$ref_a,
-                     gwas_snp_df$alt_a,
-                     gwas_snp_df$ref_b,
-                     gwas_snp_df$alt_b))
-}

@@ -7,6 +7,21 @@
 
 #include<thread>
 
+
+
+// template<typename V,typename F>
+// class AnnoBand{
+// public:
+//   using
+//   AnnoBand(const V &annotation, const F anno_fun){
+// 
+// 
+// }
+
+
+
+
+
 class LDshrinkCor{
   const double m;
   const double ne;

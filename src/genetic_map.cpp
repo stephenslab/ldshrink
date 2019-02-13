@@ -93,13 +93,19 @@ ConstantGeneticMap::ConstantGeneticMap(const Rcpp::IntegerVector &pos_vec,
 		   auto mb = map_begin;
 		   double orb=*mb;
 		   rb = retmap.insert(rb, std::make_pair(*(pb), *(mb)));
+		   bool	has_warned=false;
 		   for (size_t i = 1; i < p; i++) {
 		     pb++;
 		     mb++;
 		     if (orb >= *mb) {
-		       Rcpp::Rcerr << "Genetic map is not strictly sorted at position: "
-				   << i << " (" << orb << ">=" << *mb << ")" << std::endl;
-		       if (strict || orb > *mb) {
+                       if (!has_warned) {
+                         Rcpp::Rcerr << "Genetic map is not strictly sorted at "
+                                        "position: "
+                                     << i << " (" << orb << ">=" << *mb
+                                     << ")\n(Warning once per invocation)";
+			 has_warned=true;
+                       }
+                       if (strict || orb > *mb) {
 			 Rcpp::stop("Genetic map must be strictly sorted ");
 		       }
 		     } else {

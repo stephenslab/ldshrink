@@ -16,10 +16,6 @@ sample_cor <- function(genotype_data, anno, options) {
     .Call(`_ldshrink_sample_cor`, genotype_data, anno, options)
 }
 
-flip_allele <- function(gwas_ref, gwas_alt, ld_ref, ld_alt) {
-    .Call(`_ldshrink_flip_allele`, gwas_ref, gwas_alt, ld_ref, ld_alt)
-}
-
 sorted_snp_df <- function(snp_info) {
     .Call(`_ldshrink_sorted_snp_df`, snp_info)
 }
@@ -38,5 +34,21 @@ interpolate_genetic_map <- function(map, map_pos, target_pos, strict = TRUE, pro
 
 round_trip_skyline_t <- function(r_mat, to_t) {
     .Call(`_ldshrink_round_trip_skyline_t`, r_mat, to_t)
+}
+
+#' Determine whether 2 alleles are compatible
+NULL
+
+#' Determine whether 2 
+NULL
+
+#' @export
+strand_flip <- function(ref_alt, reverse = FALSE) {
+    .Call(`_ldshrink_strand_flip`, ref_alt, reverse)
+}
+
+#' @export
+flip_alleles <- function(query_ref_alt, target_ref_alt) {
+    .Call(`_ldshrink_flip_alleles`, query_ref_alt, target_ref_alt)
 }
 
