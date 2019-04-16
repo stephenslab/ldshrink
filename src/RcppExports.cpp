@@ -44,15 +44,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // set_ld_region
-Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame& ld_regions, const Rcpp::DataFrame& snp_info, const bool assign_all);
-RcppExport SEXP _ldshrink_set_ld_region(SEXP ld_regionsSEXP, SEXP snp_infoSEXP, SEXP assign_allSEXP) {
+Rcpp::IntegerVector set_ld_region(const Rcpp::IntegerVector ld_chr, const Rcpp::IntegerVector ld_start, const Rcpp::IntegerVector ld_stop, const Rcpp::IntegerVector ld_region_id, const Rcpp::IntegerVector chr, const Rcpp::IntegerVector pos, const bool assign_all);
+RcppExport SEXP _ldshrink_set_ld_region(SEXP ld_chrSEXP, SEXP ld_startSEXP, SEXP ld_stopSEXP, SEXP ld_region_idSEXP, SEXP chrSEXP, SEXP posSEXP, SEXP assign_allSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type ld_regions(ld_regionsSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::DataFrame& >::type snp_info(snp_infoSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type ld_chr(ld_chrSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type ld_start(ld_startSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type ld_stop(ld_stopSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type ld_region_id(ld_region_idSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type chr(chrSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector >::type pos(posSEXP);
     Rcpp::traits::input_parameter< const bool >::type assign_all(assign_allSEXP);
-    rcpp_result_gen = Rcpp::wrap(set_ld_region(ld_regions, snp_info, assign_all));
+    rcpp_result_gen = Rcpp::wrap(set_ld_region(ld_chr, ld_start, ld_stop, ld_region_id, chr, pos, assign_all));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -112,7 +116,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_ldshrink_cor", (DL_FUNC) &_ldshrink_ldshrink_cor, 3},
     {"_ldshrink_sample_cor", (DL_FUNC) &_ldshrink_sample_cor, 3},
     {"_ldshrink_sorted_snp_df", (DL_FUNC) &_ldshrink_sorted_snp_df, 1},
-    {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 3},
+    {"_ldshrink_set_ld_region", (DL_FUNC) &_ldshrink_set_ld_region, 7},
     {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {"_ldshrink_round_trip_skyline_t", (DL_FUNC) &_ldshrink_round_trip_skyline_t, 2},
     {"_ldshrink_strand_flip", (DL_FUNC) &_ldshrink_strand_flip, 2},

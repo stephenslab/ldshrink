@@ -20,8 +20,8 @@ sorted_snp_df <- function(snp_info) {
     .Call(`_ldshrink_sorted_snp_df`, snp_info)
 }
 
-set_ld_region <- function(ld_regions, snp_info, assign_all = TRUE) {
-    .Call(`_ldshrink_set_ld_region`, ld_regions, snp_info, assign_all)
+set_ld_region <- function(ld_chr, ld_start, ld_stop, ld_region_id, chr, pos, assign_all = TRUE) {
+    .Call(`_ldshrink_set_ld_region`, ld_chr, ld_start, ld_stop, ld_region_id, chr, pos, assign_all)
 }
 
 #' Linear interpolation of genetic map values

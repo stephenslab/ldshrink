@@ -20,16 +20,20 @@ private:
 };
 
 
-
-// Rcpp::XPtr<ConstantGeneticMap>
-// new_constantmap(const Rcpp::NumericVector map_data,
-//                 const Rcpp::IntegerVector map_pos);
+//class
 
 
 class DistAnnoVec{
   const std::vector<double> annot;
+  //  const double m;
+  //  const double ne;
+  //  size_t band_size;
 public:
-  DistAnnoVec(const Rcpp::NumericVector genmap) : annot(Rcpp::as<std::vector<double> >(genmap)) {}
+  DistAnnoVec(const Rcpp::NumericVector genmap): annot(Rcpp::as<std::vector<double> >(genmap)){}
+  //,const double m_,const double ne_) ,m(m_),ne(ne_) {
+
+
+  //  }
   double get(const std::array<int,2> idx) const {
     return (std::fabs(annot[idx[0]] - annot[idx[1]]));
   }
@@ -70,7 +74,7 @@ public:
 		   }
 		   retmap.insert({idxn, tmap});
 		 }
-		 return (std::move(retmap));
+		 return (retmap);
 	       }()) {}
   double get(const std::pair<T, T> idx) const {
     return (std::fabs(map_data.at(idx.first) - map_data.at(idx.second)));

@@ -52,17 +52,22 @@ test_that("Dense ldshrink is equal to a toy R implementation", {
   }
   RLD <- calcLDR(haplomat, mapdat)
   tLD <- estimate_LD(reference_panel = haplomat,map =  mapdat,output="matrix",isGenotype = F)
-
   expect_equal(RLD, tLD,check.attributes = F)
 })
 
-test_that("Dense ldshrink is equal to a toy R implementation for sample data", {
- 
-  data("reference_genotype")
+
+
+
+test_that("Dense ldshrink is equal to a toy R implementation for a relatively large  sample data", {
+
+  N <- 2000
+  p <- 2100
+  x <- matrix(sample(0.0:2.0,size=N*p,replace=T),nrow = N)
+  
   data("reference_map")
-  # haplomat <- matrix(sample(as.numeric(0:1), n*p, replace = T), n, p)
-  # mapdat <- cumsum(runif(p))
-  # 
+  n_map_pos <- sort(c(1,sample(2:(p-1),length(reference_map)-2,replace=F),p))
+  n_map <- interpolate_genetic_map(reference_map,n_map_pos,1:p)
+  expect_false(is.unsorted(n_map,strictly = T))
   ld_dist <- function(map_dist,m=85, Ne=11490.672741, cutoff = 0.001){
     rho  <-  4*Ne*(map_dist)/100;
     rho <- -rho/(2*m)
@@ -86,8 +91,8 @@ test_that("Dense ldshrink is equal to a toy R implementation for sample data", {
     
     return(stats::cov2cor(SigHat))
   }
-  RLD <- calcLDR(reference_genotype, reference_map,isgeno=TRUE)
-  tLD <- estimate_LD(reference_panel = reference_genotype,map =  reference_map,output="matrix",isGenotype = T)
+  RLD <- calcLDR(x, n_map,isgeno=TRUE)
+  tLD <- estimate_LD(reference_panel = x,map =  n_map,output="matrix",isGenotype = T)
   expect_equal(RLD, tLD,check.attributes = F)
 })
 

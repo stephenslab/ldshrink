@@ -61,21 +61,20 @@ bool sorted_snp_df(const Rcpp::DataFrame &snp_info){
 
 
 //[[Rcpp::export]]
-Rcpp::IntegerVector set_ld_region(const Rcpp::DataFrame &ld_regions,
-                                  const Rcpp::DataFrame &snp_info,
+Rcpp::IntegerVector set_ld_region(const Rcpp::IntegerVector ld_chr,
+                                  const Rcpp::IntegerVector ld_start,
+                                  const Rcpp::IntegerVector ld_stop,
+                                  const Rcpp::IntegerVector ld_region_id,
+                                  const Rcpp::IntegerVector chr,
+                                  const Rcpp::IntegerVector pos,
                                   const bool assign_all=true){
 
-  const Rcpp::IntegerVector ld_chr= ld_regions["chr"];
-  const Rcpp::IntegerVector ld_region_id= ld_regions["region_id"];
-  const Rcpp::IntegerVector ld_start= ld_regions["start"];
-  const Rcpp::IntegerVector ld_stop= ld_regions["stop"];
   const size_t ld_size=ld_chr.size();
 
   if(!std::is_sorted(ld_chr.begin(),ld_chr.end())){
     Rcpp::stop("break regions must be sorted by chromosome!");
   }
-  const Rcpp::IntegerVector chr= snp_info["chr"];
-  const Rcpp::IntegerVector pos= snp_info["pos"];
+
   const size_t snp_size = chr.size();
   Rcpp::IntegerVector ret_region(snp_size);
   if(!std::is_sorted(chr.begin(),chr.end())){

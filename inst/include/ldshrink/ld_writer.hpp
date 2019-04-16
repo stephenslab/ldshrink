@@ -30,8 +30,6 @@ struct c2d<double,2>{
   static constexpr std::array<double,2> default_v = {2,0};
 };
 
-
-
 template<typename T,typename F,int N,int AS> class MatTup{
 public:
   std::array<T,N> m_idx;
@@ -54,6 +52,9 @@ public:
   template <int I> T rc() const { return m_idx[I] ;}
   template <int I> F val() const { return m_value[I]; }
 };
+
+
+
 
 template<int AN>
 class Skyline_data_store{
@@ -311,13 +312,6 @@ inline Rcpp::S4 Skyline_data_store<AN>::todsCMatrix(Rcpp::StringVector rownames,
 template<int AN>
 Eigen::SparseMatrix<double> Skyline_data_store<AN>::toSparseMatrix() const{
   Eigen::ArrayXi OuterStarts(p_b+1);
-  const size_t cur_tot_elem=tot_elem;
-  // Eigen::ArrayXd mat_values(cur_tot_elem);
-  // Eigen::ArrayXi InnerIndices(cur_tot_elem);
-  // Eigen::ArrayXi InnerNNZ(p_a);
-
-  //  Rcpp::NumericVector	retvec(tot_elem);
-  //  auto retvec_b=retvec.begin();
   Eigen::SparseMatrix<double> tr(p_a,p_b);
   tr.setFromTriplets(this->begin<0>(),this->end<0>());
   return(tr);

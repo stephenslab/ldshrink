@@ -57,6 +57,7 @@ estimate_LD <- function(reference_panel,
     if(output=="matrix"){
         return(as.matrix(ret))
     }
+    
     return(ret)
 }
 

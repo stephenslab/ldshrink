@@ -25,6 +25,20 @@ test_that("linear indexing of symmetric matrices",{
 })
 
 
+
+test_that("ld scores are calculated correctly",{
+  data("reference_genotype")  
+  data("reference_map")
+  data("reference_ldscores")
+  RLD <- estimate_LD(reference_panel = reference_genotype,map = reference_map,method = "sample")
+  L2 <- estimate_LDscores(RLD,nrow(reference_genotype))
+  expect_equal(L2,reference_ldscores,check.attributes=F,tolerance=1e-3)
+})
+
+
+
+
+
 test_that("can chunk snp_df by number of chunks or chunksize", {
     gen_chrom <- function(ch, p){
     tibble::data_frame(pos=sort(sample(1:(p*100), p, replace = F))) %>% dplyr::mutate(chr=ch)
@@ -40,7 +54,7 @@ test_that("can chunk snp_df by number of chunks or chunksize", {
   expect_lte(max(all_chunk_df$region_size), 110)
 })
 
-test_that("genetic map interpolation works",{
+test_that("genetic map interpolation works when query is a subset ",{
   p <- 10000
   b <- runif(1)
   full_p <- 1:(100*p)
@@ -52,23 +66,49 @@ test_that("genetic map interpolation works",{
   expect_equal(not_data,testmap)
 })
 
-
-test_that("ldshrink can work like base R for sample correlation LD scores",{
-  # n <- 500
-  # p <- 1100
-  library(ldshrink)
-  data("reference_genotype")
-  data("reference_map")
-  ldscoref <- system.file("reference_genotype.l2.ldscore.gz",package = "ldshrink")
-  ld_df <- readr::read_tsv(ldscoref)
-  tR <- cor(reference_genotype)
-  rResult <- estimate_LD(reference_panel = reference_genotype,method="sample",map = reference_map,output = "matrix")
-  L2 <- estimate_LDscores(rResult,nrow(reference_genotype))
-  # R <- cor(reference_genotype[,1:5])
-  expect_equal(ld_df$L2,L2,check.attributes=F,tolerance=1e-3)
-  
+test_that("genetic map interpolation works when query ==target",{
+  p <- 10L
+  b <- runif(1)
+  pos <- 1L:p
+  not_pos <- pos
+  mymap <- pos*b
+  testmap <- interpolate_genetic_map(mymap,pos,not_pos,strict=T)
+  expect_equal(testmap,mymap)
 })
 
+
+test_that("Check for assigning SNPs to blocks",{
+  
+  input_f <- system.file("test_data/fourier_ls-all.bed.gz",package = "ldshrink")
+  ld_df <- read_tsv(input_f,col_types=cols(
+    chr = col_character(),
+    start = col_integer(),
+    stop = col_integer()
+  )) %>%
+    group_by(chr) %>%
+    mutate(start = if_else(start==min(start),
+                           0L,start)) %>%
+    mutate(stop = if_else(stop==max(stop),
+                          .Machine$integer.max,stop)) %>%
+    ungroup() %>%
+    mutate(region_id=1:n())
+  
+
+  snp_df <- pmap_dfr(ld_df,function(chr,start,stop,region_id,...){
+    n_snps <- sample(1:100,1)
+    tibble(pos=sort(sample(start:stop,n_snps,replace=T))) %>% 
+      mutate(chr=chr,region_id=region_id) 
+  })
+  n_region_id <- assign_region(break_chr = ld_df$chr,
+                               break_start = ld_df$start,
+                               break_stop = ld_df$stop,
+                               break_id = ld_df$region_id,
+                               snp_chr = snp_df$chr,
+                               snp_pos = snp_df$pos,assign_all=T)
+                               
+                               # break_df = ld_df,assign_all = TRUE)
+  expect_equal(snp_df$region_id,n_region_id)
+})
 
 test_that("Check for allele flipping works",{
   
@@ -78,7 +118,7 @@ test_that("Check for allele flipping works",{
   
   #don't flip yourself
   expect_equal(flip_alleles(ref_a,ref_a),rep(1L,12))
-  rev_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(.x),collapse=",")) 
+  rev_ref <- purrr::map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(.x),collapse=",")) 
   expect_equal(flip_alleles(ref_a,rev_ref),rep(-1L,12))
   
   flips <- c("A"="T",
@@ -86,9 +126,9 @@ test_that("Check for allele flipping works",{
              "G"="C",
              "C"="G")
   
-  flip_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(flips[.x],collapse=",")) 
+  flip_ref <- purrr::map_chr(strsplit(ref_a,",",fixed=T),~paste(flips[.x],collapse=",")) 
   expect_equal(flip_alleles(ref_a,flip_ref),rep(-1L,12))
-  flip_rev_ref <- map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(flips[.x]),collapse=",")) 
+  flip_rev_ref <- purrr::map_chr(strsplit(ref_a,",",fixed=T),~paste(rev(flips[.x]),collapse=",")) 
   expect_equal(flip_alleles(ref_a,flip_rev_ref),rep(1L,12))
   
 })

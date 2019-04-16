@@ -16,7 +16,7 @@ double ConstantGeneticMap::interpolate_post(const int pos)const {
 }
 
 double ConstantGeneticMap::interpolate_prev(const int pos)const{
-  const std::string error_mess="position"+std::to_string(pos)+" is before first position";
+  const std::string error_mess="position "+std::to_string(pos)+" is before first position";
   if (strict) {
     Rcpp::stop(error_mess);
   }
@@ -57,13 +57,14 @@ double ConstantGeneticMap::interpolate(const int pos)const {
   if(n_it == genmap.end()){
     return (interpolate_post(pos));
   }
+  if (n_it->first == pos) {
+    return (n_it->second);
+  }
   if(n_it == genmap.begin()){
 
     return (interpolate_prev(pos));
   }
-  if (n_it->first == pos) {
-    return (n_it->second);
-  }
+
   const auto prev_it = std::prev(n_it);
   return (linear_interp(prev_it, n_it, pos));
 }
