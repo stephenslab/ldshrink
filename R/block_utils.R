@@ -10,7 +10,7 @@
 #' @param assign_all whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`
 #' @return modified `snp_df` dataframe with additional column `region_id` mapping snp to LD block
 #' @export
-assign_region <- function(break_chr,break_start,break_stop,break_id=seq_along(break_chr), snp_chr,snp_pos, assign_all=T){
+assign_region <- function(break_chr, break_start, break_stop, break_id = seq_along(break_chr), snp_chr, snp_pos, assign_all=T){
   stopifnot(!is.null(break_chr),
             length(break_chr)==length(break_start),
             length(break_start)==length(break_stop),
