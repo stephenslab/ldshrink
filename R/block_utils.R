@@ -90,6 +90,10 @@ calc_theta <- function(m){
 }
 
 
+
+
+
+
 #' Query a a reference panel for a set of SNPs and see if any of them need a sign flip
 #'
 #' @param query_chr chromosome for query SNPs coded as integer or character (coding must match `panel_chr`)
@@ -137,6 +141,7 @@ query_reference_snpset <- function(query_chr,query_pos,query_allele,query_block=
   ij_df <- dplyr::mutate(ij_df,allele_match=flip_alleles(allele.x,allele.y))
   ij_df <- dplyr::right_join(ij_df,query_df)
   ij_df <- dplyr::mutate(ij_df,allele_match=dplyr::if_else(is.na(allele_match),0L,allele_match))
+  
   dplyr::pull(ij_df,allele_match)
   
 }

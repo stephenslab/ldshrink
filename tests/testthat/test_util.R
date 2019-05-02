@@ -80,24 +80,25 @@ test_that("genetic map interpolation works when query ==target",{
 test_that("Check for assigning SNPs to blocks",{
   
   input_f <- system.file("test_data/fourier_ls-all.bed.gz",package = "ldshrink")
-  ld_df <- read_tsv(input_f,col_types=cols(
-    chr = col_character(),
-    start = col_integer(),
-    stop = col_integer()
-  )) %>%
-    group_by(chr) %>%
-    mutate(start = if_else(start==min(start),
-                           0L,start)) %>%
-    mutate(stop = if_else(stop==max(stop),
-                          .Machine$integer.max,stop)) %>%
-    ungroup() %>%
-    mutate(region_id=1:n())
+  ld_df <- readr::read_tsv(input_f,col_types=readr::cols(
+    chr = readr::col_character(),
+    start = readr::col_integer(),
+    stop = readr::col_integer()
+  ))
+  ld_df <- dplyr::group_by(ld_df,chr)
+  ld_df <- 
+    dplyr::mutate(ld_df,start = dplyr::if_else(start==min(start),
+                                               0L,start),
+                  stop = dplyr::if_else(stop==max(stop),
+                                        .Machine$integer.max,stop))
+    ld_df <- dplyr::ungroup(ld_df)
+    ld_df <- dplyr::mutate(ld_df,region_id=1:n())
   
 
-  snp_df <- pmap_dfr(ld_df,function(chr,start,stop,region_id,...){
+  snp_df <- purrr::pmap_dfr(ld_df,function(chr,start,stop,region_id,...){
     n_snps <- sample(1:100,1)
-    tibble(pos=sort(sample(start:stop,n_snps,replace=T))) %>% 
-      mutate(chr=chr,region_id=region_id) 
+    dplyr::mutate(tibble::tibble(pos=sort(sample(start:stop,n_snps,replace=T))),
+                  chr=chr,region_id=region_id)
   })
   n_region_id <- assign_region(break_chr = ld_df$chr,
                                break_start = ld_df$start,
@@ -109,6 +110,76 @@ test_that("Check for assigning SNPs to blocks",{
                                # break_df = ld_df,assign_all = TRUE)
   expect_equal(snp_df$region_id,n_region_id)
 })
+
+
+
+test_that("Check for finding SNPs works with all snps",{
+  
+  input_f <- system.file("test_data/fourier_ls-all.bed.gz",package = "ldshrink")
+  ld_df <- readr::read_tsv(input_f,col_types=readr::cols(
+    chr = readr::col_character(),
+    start = readr::col_integer(),
+    stop = readr::col_integer()
+  ))
+  ld_df <- dplyr::group_by(ld_df,chr)
+  ld_df <- 
+    dplyr::mutate(ld_df,start = dplyr::if_else(start==min(start),
+                                               0L,start),
+                  stop = dplyr::if_else(stop==max(stop),
+                                        .Machine$integer.max,stop))
+  ld_df <- dplyr::ungroup(ld_df)
+  ld_df <- dplyr::mutate(ld_df,region_id=1:dplyr::n(),chr=as.integer(gsub("chr","",chr)))
+  
+  
+  snp_df <- purrr::pmap_dfr(ld_df,function(chr,start,stop,region_id,...){
+    n_snps <- sample(1:100,1)
+    dplyr::mutate(tibble::tibble(pos=sort(sample(start:stop,n_snps,replace=T))),
+                  chr=chr,region_id=region_id)
+  })
+  
+  snp_sample <- sort(sample(1:nrow(snp_df),100,replace=F))
+  query_slice <- dplyr::slice(snp_df,snp_sample)
+  ret <- ldshrink::find_alleles(query_chrom = query_slice$chr,query_pos = query_slice$pos,ref_chrom = snp_df$chr,ref_pos = snp_df$pos,query_chunk = query_slice$region_id,ref_chunk = snp_df$region_id)
+expect_equal(ret,snp_sample)
+})
+
+test_that("Check for finding SNPs works with missing snps",{
+  
+  input_f <- system.file("test_data/fourier_ls-all.bed.gz",package = "ldshrink")
+  ld_df <- readr::read_tsv(input_f,col_types=readr::cols(
+    chr = readr::col_character(),
+    start = readr::col_integer(),
+    stop = readr::col_integer()
+  ))
+  ld_df <- dplyr::group_by(ld_df,chr)
+  ld_df <- 
+    dplyr::mutate(ld_df,start = dplyr::if_else(start==min(start),
+                                               0L,start),
+                  stop = dplyr::if_else(stop==max(stop),
+                                        .Machine$integer.max,stop))
+  ld_df <- dplyr::ungroup(ld_df)
+  ld_df <- dplyr::mutate(ld_df,region_id=1:dplyr::n(),chr=as.integer(gsub("chr","",chr)))
+  
+  
+  snp_df <- purrr::pmap_dfr(ld_df,function(chr,start,stop,region_id,...){
+    n_snps <- sample(1:100,1)
+    dplyr::mutate(tibble::tibble(pos=sort(sample(start:stop,n_snps,replace=T))),
+                  chr=chr,region_id=region_id)
+  })
+  
+  snp_df <- dplyr::mutate(snp_df,snp_id=1:dplyr::n())
+  snp_sample <- sort(sample(1:nrow(snp_df),100,replace=F))
+  osnp_sample <- sample(snp_sample,50,replace=F)
+  query_slice <- dplyr::slice(snp_df,snp_sample)
+  snp_df <- snp_df <- snp_df[-osnp_sample,]
+  ret <- ldshrink::find_alleles(query_chrom = query_slice$chr,query_pos = query_slice$pos,ref_chrom = snp_df$chr,ref_pos = snp_df$pos,query_chunk = query_slice$region_id,ref_chunk = snp_df$region_id)
+  nret <- dplyr::inner_join(query_slice,snp_df,by = c("pos", "chr", "region_id", "snp_id"))
+  expect_equal(nrow(nret),50L)
+  
+})
+
+
+
 
 test_that("Check for allele flipping works",{
   

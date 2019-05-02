@@ -6,8 +6,7 @@ context("Test LD calculations")
 
 test_that("ldshrink can work like base R for sample correlation",{
   # n <- 500
-                                        # p <- 1100
-    library(ldshrink)
+  # p <- 1100
   data("reference_genotype")
   data("reference_map")
   

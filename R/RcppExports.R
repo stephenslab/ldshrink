@@ -39,14 +39,29 @@ round_trip_skyline_t <- function(r_mat, to_t) {
 #' Determine whether 2 alleles are compatible
 NULL
 
-#' Determine whether 2 
-NULL
-
 #' @export
 strand_flip <- function(ref_alt, reverse = FALSE) {
     .Call(`_ldshrink_strand_flip`, ref_alt, reverse)
 }
 
+#' Find query SNP in a list of reference snps
+#' @param query_chrom query chromosome
+#' @param query_pos query position
+#' @param ref_chrom reference chromosome
+#' @param ref_pos reference position
+#' @param query_chunk region assignment for query (optional)
+#' @param ref_chunk region assignment for reference (optional)
+#' @return returns a vector with the position of the match, or NA if no match is found.
+#' @export
+find_alleles <- function(query_chrom, query_pos, ref_chrom, ref_pos, query_chunk = as.integer( c()), ref_chunk = as.integer( c())) {
+    .Call(`_ldshrink_find_alleles`, query_chrom, query_pos, ref_chrom, ref_pos, query_chunk, ref_chunk)
+}
+
+#' Determine whether 2 
+#' @param query_ref_alt is a ref/alt pair
+#' @param target_ref_alt is another ref/alt pair
+#' @return returns a vector with 1 if the query matches the target, -1 if a flip is required, or 0 if they are incompatible;
+#' Note that in the case that the reference and/or alternate allele are not single characters, they will only be checked for equality  
 #' @export
 flip_alleles <- function(query_ref_alt, target_ref_alt) {
     .Call(`_ldshrink_flip_alleles`, query_ref_alt, target_ref_alt)

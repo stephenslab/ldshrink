@@ -99,6 +99,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// find_alleles
+Rcpp::IntegerVector find_alleles(Rcpp::IntegerVector query_chrom, Rcpp::IntegerVector query_pos, Rcpp::IntegerVector ref_chrom, Rcpp::IntegerVector ref_pos, Rcpp::IntegerVector query_chunk, Rcpp::IntegerVector ref_chunk);
+RcppExport SEXP _ldshrink_find_alleles(SEXP query_chromSEXP, SEXP query_posSEXP, SEXP ref_chromSEXP, SEXP ref_posSEXP, SEXP query_chunkSEXP, SEXP ref_chunkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type query_chrom(query_chromSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type query_pos(query_posSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type ref_chrom(ref_chromSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type ref_pos(ref_posSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type query_chunk(query_chunkSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type ref_chunk(ref_chunkSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_alleles(query_chrom, query_pos, ref_chrom, ref_pos, query_chunk, ref_chunk));
+    return rcpp_result_gen;
+END_RCPP
+}
 // flip_alleles
 Rcpp::IntegerVector flip_alleles(Rcpp::StringVector query_ref_alt, Rcpp::StringVector target_ref_alt);
 RcppExport SEXP _ldshrink_flip_alleles(SEXP query_ref_altSEXP, SEXP target_ref_altSEXP) {
@@ -120,6 +136,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ldshrink_interpolate_genetic_map", (DL_FUNC) &_ldshrink_interpolate_genetic_map, 5},
     {"_ldshrink_round_trip_skyline_t", (DL_FUNC) &_ldshrink_round_trip_skyline_t, 2},
     {"_ldshrink_strand_flip", (DL_FUNC) &_ldshrink_strand_flip, 2},
+    {"_ldshrink_find_alleles", (DL_FUNC) &_ldshrink_find_alleles, 6},
     {"_ldshrink_flip_alleles", (DL_FUNC) &_ldshrink_flip_alleles, 2},
     {NULL, NULL, 0}
 };
