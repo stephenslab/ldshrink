@@ -134,7 +134,7 @@ assign_map <- function(snp_df, map_df){
 #' 
 flip_allele_exp <- function(allele_a, allele_b){
   utf_i <- Vectorize(utf8ToInt)
-  data_df <- tibble::data_frame(allele_a = allele_a, allele_b=allele_b)
+  data_df <- tibble::tibble(allele_a = allele_a, allele_b=allele_b)
   gwas_snp_df <- data_df %>%
     tidyr::separate(allele_a, c("ref_a", "alt_a")) %>%
     tidyr::separate(allele_b, c("ref_b", "alt_b")) %>%

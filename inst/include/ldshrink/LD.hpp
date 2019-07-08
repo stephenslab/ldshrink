@@ -10,9 +10,9 @@
 #include <progress.hpp>
 #include <progress_bar.hpp>
 // [[Rcpp::depends(RcppParallel)]]
-//#include "RcppParallel/TBB.h"
+
 #include <RcppParallel.h>
-//#include <tbb/tbb.h>
+
 
 inline double calc_nmsum(const double m) {
   int msize = (2 * (int)m - 1);

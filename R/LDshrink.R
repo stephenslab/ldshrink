@@ -1,6 +1,18 @@
-#'
 
+pos2range <- function(chrom,pos){
+  purrr::imap_chr(split(pos,chrom),~paste0(.y,":",paste0(range(.x),collapse="-")))
+}
 
+chunk_range <- function(chrom,pos,num_chunks=1){
+  p <- length(pos)
+  stopifnot(length(chrom)==p)
+
+  k <- ceiling(p/num_chunks)
+  tibble::tibble(chrom=chrom,pos=pos) %>% 
+    dplyr::mutate(chunk_id=gl(n=num_chunks,k =k,length=p)) %>% 
+    dplyr::group_by(chunk_id) %>% 
+    do(tibble(range=pos2range(.$chrom,.$pos))) %>% ungroup()
+}
 
 
 #' Calculate ldshrink adjusted LD matrix
