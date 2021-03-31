@@ -19,7 +19,8 @@ Imports:
     BH,
     magrittr,
     tidyr,
-    RcppParallel
+    RcppParallel,
+    bit
 LinkingTo:
 	Rcpp,
 	RcppEigen,
@@ -36,4 +37,4 @@ SystemRequirements: GNU make
 URL: https://github.com/stephenslab/ldshrink
 BugReports: https://github.com/stephenslab/ldshrink/issues
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
