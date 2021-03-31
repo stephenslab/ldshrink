@@ -21,3 +21,6 @@ src/#*
 GTAGS
 GRTAGS
 GPATH
+.Rdata
+.httr-oauth
+.DS_Store
