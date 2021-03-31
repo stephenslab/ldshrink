@@ -13,6 +13,9 @@ assign_map(snp_df, map_df)
 
 \item{assign_all}{whether to throw an error if a SNP cannot be assigned to a block, or to assign it to block `NA`}
 }
+\value{
+
+}
 \description{
 Assign or Interpolate Genetic Map Values
 }
